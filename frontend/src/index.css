@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background-color: #f8f9fa;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c5c9d6;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9da4ba;
+}
+
+/* Print styles for passbook / receipts */
+@media print {
+  .no-print,
+  nav, aside, header,
+  .MuiDrawer-root,
+  .MuiAppBar-root {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  main, [role="main"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .passbook-print-area {
+    margin: 0 !important;
+    padding: 12mm 10mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Header band — keep navy bg with white text */
+  .passbook-header {
+    background-color: #0A1628 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .passbook-header * {
+    color: #ffffff !important;
+  }
+  .passbook-header .passbook-header-sub {
+    color: rgba(255,255,255,0.7) !important;
+  }
+
+  /* Gold bar */
+  .passbook-title-bar {
+    background-color: #C5A572 !important;
+    color: #0A1628 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Account detail labels */
+  .passbook-label {
+    color: #555 !important;
+  }
+  .passbook-value {
+    color: #000 !important;
+  }
+
+  /* Balance box */
+  .passbook-balance-box {
+    background-color: #f5f5f5 !important;
+    border: 1px solid #ccc !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Table */
+  .passbook-print-area table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    page-break-inside: auto !important;
+  }
+
+  .passbook-print-area thead {
+    display: table-header-group !important;
+  }
+
+  .passbook-print-area tr {
+    page-break-inside: avoid !important;
+  }
+
+  .passbook-print-area th,
+  .passbook-print-area td {
+    border: 1px solid #333 !important;
+    padding: 6px 10px !important;
+    font-size: 10pt !important;
+  }
+
+  /* Table header — dark bg with white text for print */
+  .passbook-print-area th {
+    background-color: #0A1628 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Amounts — ensure visible in B&W print */
+  .passbook-print-area td {
+    color: #000 !important;
+  }
+
+  .passbook-amt-dr {
+    color: #000 !important;
+  }
+  .passbook-amt-cr {
+    color: #000 !important;
+  }
+
+  /* Footer */
+  .passbook-footer {
+    color: #555 !important;
+  }
+
+  /* BC logo circle */
+  .passbook-logo {
+    background-color: #C5A572 !important;
+    color: #0A1628 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+}
