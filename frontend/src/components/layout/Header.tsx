@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   AppBar, Toolbar, Typography, IconButton, Avatar, Menu, MenuItem,
   ListItemIcon, ListItemText, Box, Divider, useMediaQuery, useTheme,
-  Stack, Badge, Popover, List, ListItemButton, Button,
+  Stack, Badge, Popover, List, ListItemButton, Button, Tooltip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
@@ -24,17 +25,10 @@ interface Props {
   onMenuToggle: () => void;
 }
 
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
-}
-
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, justNow: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
+  if (mins < 1) return justNow;
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -43,6 +37,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function Header({ title, onMenuToggle }: Props) {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -50,6 +45,19 @@ export default function Header({ title, onMenuToggle }: Props) {
   const qc = useQueryClient();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return t('header.goodMorning');
+    if (h < 17) return t('header.goodAfternoon');
+    return t('header.goodEvening');
+  })();
+
+  const toggleLanguage = () => {
+    i18n.changeLanguage(i18n.language === 'en' ? 'hi' : 'en');
+  };
+
+  const roleName = user?.role ? (t(`roles.${user.role}`) || user.role.replace(/_/g, ' ')) : '';
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['notification-count'],
@@ -119,14 +127,66 @@ export default function Header({ title, onMenuToggle }: Props) {
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '0.95rem' }, lineHeight: 1.3 }}>
-            {getGreeting()}, {user?.fullName?.split(' ')[0] ?? 'User'}
+            {greeting}, {user?.fullName?.split(' ')[0] ?? 'User'}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
-            {user?.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} &middot; Bhagwati Credit Co-operative Society
+            {roleName} &middot; {t('common.appName')} {t('common.appSubtitle')}
           </Typography>
         </Box>
 
         <Stack direction="row" alignItems="center" spacing={0.5}>
+          {/* Language Toggle */}
+          <Tooltip title={i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}>
+            <Box
+              onClick={toggleLanguage}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                borderRadius: '20px',
+                border: '1.5px solid',
+                borderColor: 'divider',
+                overflow: 'hidden',
+                height: 32,
+                userSelect: 'none',
+                transition: 'border-color 0.2s',
+                '&:hover': { borderColor: '#C5A572' },
+              }}
+            >
+              <Box
+                sx={{
+                  px: 1.2, py: 0.4,
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  borderRadius: '20px',
+                  transition: 'all 0.25s ease',
+                  ...(i18n.language === 'en'
+                    ? { bgcolor: '#C5A572', color: '#FFF' }
+                    : { bgcolor: 'transparent', color: 'text.secondary' }),
+                }}
+              >
+                EN
+              </Box>
+              <Box
+                sx={{
+                  px: 1.2, py: 0.4,
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  borderRadius: '20px',
+                  transition: 'all 0.25s ease',
+                  ...(i18n.language === 'hi'
+                    ? { bgcolor: '#C5A572', color: '#FFF' }
+                    : { bgcolor: 'transparent', color: 'text.secondary' }),
+                }}
+              >
+                हि
+              </Box>
+            </Box>
+          </Tooltip>
+
+          {/* Notifications */}
           <IconButton
             size="small"
             sx={{ color: 'text.secondary' }}
@@ -174,7 +234,7 @@ export default function Header({ title, onMenuToggle }: Props) {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
-            <Typography variant="subtitle2" fontWeight={700}>Notifications</Typography>
+            <Typography variant="subtitle2" fontWeight={700}>{t('header.notifications')}</Typography>
             {unreadCount > 0 && (
               <Button
                 size="small"
@@ -182,14 +242,14 @@ export default function Header({ title, onMenuToggle }: Props) {
                 onClick={() => markAll.mutate()}
                 sx={{ fontSize: '0.7rem', textTransform: 'none' }}
               >
-                Mark all read
+                {t('header.markAllRead')}
               </Button>
             )}
           </Box>
           <Divider />
           {notifications.length === 0 ? (
             <Box sx={{ py: 5, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">No notifications</Typography>
+              <Typography variant="body2" color="text.secondary">{t('header.noNotifications')}</Typography>
             </Box>
           ) : (
             <List disablePadding sx={{ maxHeight: 380, overflow: 'auto' }}>
@@ -218,7 +278,7 @@ export default function Header({ title, onMenuToggle }: Props) {
                       {n.message}
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem', mt: 0.5, display: 'block' }}>
-                      {timeAgo(n.createdAt)}
+                      {timeAgo(n.createdAt, t('header.justNow'))}
                     </Typography>
                   </Box>
                 </ListItemButton>
@@ -249,22 +309,22 @@ export default function Header({ title, onMenuToggle }: Props) {
               {user?.fullName}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {user?.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              {roleName}
             </Typography>
           </Box>
           <Divider />
           <MenuItem onClick={() => navigate('/profile')}>
             <ListItemIcon><PersonOutlineIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Profile</ListItemText>
+            <ListItemText>{t('auth.profile')}</ListItemText>
           </MenuItem>
           <MenuItem onClick={() => navigate('/change-password')}>
             <ListItemIcon><LockResetIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Change Password</ListItemText>
+            <ListItemText>{t('auth.changePassword')}</ListItemText>
           </MenuItem>
           <Divider />
           <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
             <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
-            <ListItemText>Logout</ListItemText>
+            <ListItemText>{t('auth.logout')}</ListItemText>
           </MenuItem>
         </Menu>
       </Toolbar>

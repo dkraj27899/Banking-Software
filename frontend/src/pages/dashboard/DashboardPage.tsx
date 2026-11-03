@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
-  Box, Grid, Card, CardContent, Typography, Button, alpha, Stack, Skeleton, CardActionArea,
+  Box, Grid, Card, CardContent, Typography, alpha, Skeleton, CardActionArea,
 } from '@mui/material';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
@@ -71,49 +72,8 @@ function StatCard({ icon, label, value, color, bgColor, loading }: StatCardProps
   );
 }
 
-function buildStats(data?: DashboardStats): StatCardProps[] {
-  return [
-    {
-      icon: <PeopleAltOutlinedIcon />, label: 'Active Members',
-      value: data ? String(data.members.active) : '0',
-      color: '#2563EB', bgColor: alpha('#2563EB', 0.08),
-    },
-    {
-      icon: <AccountBalanceOutlinedIcon />, label: 'Active Accounts',
-      value: data ? String(data.accounts.active) : '0',
-      color: '#059669', bgColor: alpha('#059669', 0.08),
-    },
-    {
-      icon: <TrendingUpOutlinedIcon />, label: "Today's Volume",
-      value: data ? formatINR(data.today.depositsPaise + data.today.withdrawalsPaise) : formatINR(0),
-      color: '#7C3AED', bgColor: alpha('#7C3AED', 0.08),
-    },
-    {
-      icon: <PendingActionsOutlinedIcon />, label: 'Pending Approvals',
-      value: data ? String(data.pendingAuthorizations.count) : '0',
-      color: '#D97706', bgColor: alpha('#D97706', 0.08),
-    },
-    {
-      icon: <CreditScoreOutlinedIcon />, label: 'Total Deposits',
-      value: data ? formatINR(data.accounts.totalBalancePaise) : formatINR(0),
-      color: '#0891B2', bgColor: alpha('#0891B2', 0.08),
-    },
-    {
-      icon: <WarningAmberOutlinedIcon />, label: 'Pending Members',
-      value: data ? String(data.members.pending) : '0',
-      color: '#DC2626', bgColor: alpha('#DC2626', 0.08),
-    },
-  ];
-}
-
-const quickActions = [
-  { icon: <PersonAddAlt1OutlinedIcon />, label: 'New Member', desc: 'Register a member', path: '/members/new', color: '#2563EB' },
-  { icon: <AddCardOutlinedIcon />, label: 'New Account', desc: 'Open an account', path: '/accounts/new', color: '#059669' },
-  { icon: <AddCircleOutlineIcon />, label: 'New Transaction', desc: 'Deposit or withdraw', path: '/transactions/new', color: '#7C3AED' },
-  { icon: <AssessmentOutlinedIcon />, label: 'View Reports', desc: 'Financial reports', path: '/reports', color: '#D97706' },
-];
-
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
@@ -121,14 +81,52 @@ export default function DashboardPage() {
     refetchInterval: 60_000,
   });
 
-  const stats = buildStats(data);
+  const stats: StatCardProps[] = [
+    {
+      icon: <PeopleAltOutlinedIcon />, label: t('dashboard.activeMembers'),
+      value: data ? String(data.members.active) : '0',
+      color: '#2563EB', bgColor: alpha('#2563EB', 0.08),
+    },
+    {
+      icon: <AccountBalanceOutlinedIcon />, label: t('dashboard.activeAccounts'),
+      value: data ? String(data.accounts.active) : '0',
+      color: '#059669', bgColor: alpha('#059669', 0.08),
+    },
+    {
+      icon: <TrendingUpOutlinedIcon />, label: t('dashboard.todaysVolume'),
+      value: data ? formatINR(data.today.depositsPaise + data.today.withdrawalsPaise) : formatINR(0),
+      color: '#7C3AED', bgColor: alpha('#7C3AED', 0.08),
+    },
+    {
+      icon: <PendingActionsOutlinedIcon />, label: t('dashboard.pendingApprovals'),
+      value: data ? String(data.pendingAuthorizations.count) : '0',
+      color: '#D97706', bgColor: alpha('#D97706', 0.08),
+    },
+    {
+      icon: <CreditScoreOutlinedIcon />, label: t('dashboard.totalDeposits'),
+      value: data ? formatINR(data.accounts.totalBalancePaise) : formatINR(0),
+      color: '#0891B2', bgColor: alpha('#0891B2', 0.08),
+    },
+    {
+      icon: <WarningAmberOutlinedIcon />, label: t('dashboard.pendingMembers'),
+      value: data ? String(data.members.pending) : '0',
+      color: '#DC2626', bgColor: alpha('#DC2626', 0.08),
+    },
+  ];
+
+  const quickActions = [
+    { icon: <PersonAddAlt1OutlinedIcon />, label: t('dashboard.newMember'), desc: t('dashboard.registerMember'), path: '/members/new', color: '#2563EB' },
+    { icon: <AddCardOutlinedIcon />, label: t('dashboard.newAccount'), desc: t('dashboard.openAccount'), path: '/accounts/new', color: '#059669' },
+    { icon: <AddCircleOutlineIcon />, label: t('dashboard.newTransaction'), desc: t('dashboard.depositOrWithdraw'), path: '/transactions/new', color: '#7C3AED' },
+    { icon: <AssessmentOutlinedIcon />, label: t('dashboard.viewReports'), desc: t('dashboard.financialReports'), path: '/reports', color: '#D97706' },
+  ];
 
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>Dashboard</Typography>
+        <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>{t('dashboard.title')}</Typography>
         <Typography variant="body2" color="text.secondary">
-          Overview of society operations at a glance.
+          {t('dashboard.subtitle')}
         </Typography>
       </Box>
 
@@ -140,7 +138,7 @@ export default function DashboardPage() {
         ))}
       </Grid>
 
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>Quick Actions</Typography>
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>{t('dashboard.quickActions')}</Typography>
       <Grid container spacing={{ xs: 1.5, sm: 2 }}>
         {quickActions.map((action) => (
           <Grid item xs={6} sm={3} key={action.label}>

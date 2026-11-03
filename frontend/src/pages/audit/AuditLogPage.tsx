@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Card, Typography, Stack, TextField, MenuItem,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
@@ -18,6 +19,7 @@ const actionFilters = [
 ];
 
 function AuditRow({ log, isMobile }: { log: any; isMobile: boolean }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -40,7 +42,7 @@ function AuditRow({ log, isMobile }: { log: any; isMobile: boolean }) {
         <TableCell colSpan={7} sx={{ py: 0, border: 0 }}>
           <Collapse in={open}>
             <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, my: 1, overflowX: 'auto' }}>
-              <Typography variant="caption" color="text.secondary">Details</Typography>
+              <Typography variant="caption" color="text.secondary">{t('common.details')}</Typography>
               <pre style={{ margin: 0, fontSize: '0.75rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                 {JSON.stringify(log.details, null, 2)}
               </pre>
@@ -53,6 +55,7 @@ function AuditRow({ log, isMobile }: { log: any; isMobile: boolean }) {
 }
 
 export default function AuditLogPage() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [page, setPage] = useState(0);
@@ -76,23 +79,23 @@ export default function AuditLogPage() {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>Audit Logs</Typography>
+      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>{t('audit.title')}</Typography>
 
       <Card sx={{ mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ p: 2 }}>
-          <TextField select size="small" value={action} label="Action"
+          <TextField select size="small" value={action} label={t('audit.action')}
             onChange={(e) => { setAction(e.target.value); setPage(0); }}
             sx={{ minWidth: { xs: '100%', sm: 160 } }}>
-            {actionFilters.map((a) => <MenuItem key={a} value={a}>{a || 'All'}</MenuItem>)}
+            {actionFilters.map((a) => <MenuItem key={a} value={a}>{a || t('common.all')}</MenuItem>)}
           </TextField>
           <TextField
-            size="small" type="date" label="From" value={dateFrom}
+            size="small" type="date" label={t('common.from')} value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ flex: { sm: 1 }, maxWidth: { sm: 180 } }}
           />
           <TextField
-            size="small" type="date" label="To" value={dateTo}
+            size="small" type="date" label={t('common.to')} value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ flex: { sm: 1 }, maxWidth: { sm: 180 } }}
@@ -102,7 +105,7 @@ export default function AuditLogPage() {
 
       <Card>
         {isLoading ? <LoadingSpinner /> : logs.length === 0 ? (
-          <EmptyState message="No audit logs found" />
+          <EmptyState message={t('audit.noLogs')} />
         ) : (
           <>
             <TableContainer sx={{ overflowX: 'auto' }}>
@@ -110,12 +113,12 @@ export default function AuditLogPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell width={40} />
-                    <TableCell>Timestamp</TableCell>
-                    <TableCell>Actor</TableCell>
-                    <TableCell>Action</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Entity Type</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Entity ID</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>IP Address</TableCell>
+                    <TableCell>{t('audit.timestamp')}</TableCell>
+                    <TableCell>{t('audit.actor')}</TableCell>
+                    <TableCell>{t('audit.action')}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('audit.entityType')}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{t('audit.entityId')}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{t('audit.ipAddress')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

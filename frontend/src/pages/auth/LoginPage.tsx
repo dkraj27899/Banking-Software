@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, TextField, Button, Typography,
-  InputAdornment, IconButton, Alert, CircularProgress, alpha,
+  InputAdornment, IconButton, Alert, CircularProgress, alpha, Tooltip,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import TranslateIcon from '@mui/icons-material/Translate';
 import { loginSchema } from '@bccs/shared';
 import { useAuth } from '@/store/authStore';
 import type { z } from 'zod';
@@ -17,6 +19,7 @@ import type { z } from 'zod';
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -38,9 +41,13 @@ export default function LoginPage() {
       await login(data.username, data.password);
       navigate(from, { replace: true });
     } catch (err: any) {
-      const msg = err?.response?.data?.error?.message ?? 'Invalid credentials. Please try again.';
+      const msg = err?.response?.data?.error?.message ?? t('auth.invalidCredentials');
       setError(msg);
     }
+  };
+
+  const toggleLanguage = () => {
+    i18n.changeLanguage(i18n.language === 'en' ? 'hi' : 'en');
   };
 
   return (
@@ -52,8 +59,34 @@ export default function LoginPage() {
         justifyContent: 'center',
         background: 'linear-gradient(145deg, #0A1628 0%, #142240 50%, #0A1628 100%)',
         px: 2,
+        position: 'relative',
       }}
     >
+      {/* Language toggle on login page */}
+      <Tooltip title={i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}>
+        <IconButton
+          onClick={toggleLanguage}
+          sx={{
+            position: 'absolute',
+            top: 20,
+            right: 20,
+            color: alpha('#FFF', 0.6),
+            border: '1px solid',
+            borderColor: alpha('#FFF', 0.2),
+            borderRadius: 2,
+            px: 1.5,
+            py: 0.5,
+            gap: 0.5,
+            '&:hover': { borderColor: alpha('#C5A572', 0.5), color: '#C5A572' },
+          }}
+        >
+          <TranslateIcon sx={{ fontSize: 18 }} />
+          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+            {i18n.language === 'en' ? 'हिन्दी' : 'English'}
+          </span>
+        </IconButton>
+      </Tooltip>
+
       {/* Subtle decorative elements */}
       <Box
         sx={{
@@ -96,13 +129,13 @@ export default function LoginPage() {
               variant="h5"
               sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1.3 }}
             >
-              Bhagwati Credit
+              {t('common.appName')}
             </Typography>
             <Typography
               variant="body2"
               sx={{ color: 'text.secondary', mt: 0.25, fontSize: '0.8rem' }}
             >
-              Co-operative Society Ltd.
+              {t('common.appSubtitle')}
             </Typography>
             <Typography
               variant="overline"
@@ -113,7 +146,7 @@ export default function LoginPage() {
                 fontSize: '0.65rem',
               }}
             >
-              Banking Management System
+              {t('common.bankingSystem')}
             </Typography>
           </Box>
 
@@ -133,7 +166,7 @@ export default function LoginPage() {
                 <TextField
                   {...field}
                   fullWidth
-                  label="Username"
+                  label={t('auth.username')}
                   autoComplete="username"
                   autoFocus
                   error={!!errors.username}
@@ -157,7 +190,7 @@ export default function LoginPage() {
                 <TextField
                   {...field}
                   fullWidth
-                  label="Password"
+                  label={t('auth.password')}
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   error={!!errors.password}
@@ -202,7 +235,7 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <CircularProgress size={22} sx={{ color: '#FFF' }} />
               ) : (
-                'Sign In'
+                t('auth.signIn')
               )}
             </Button>
           </form>
@@ -215,7 +248,7 @@ export default function LoginPage() {
               color: 'text.disabled', fontSize: '0.72rem',
             }}
           >
-            Forgot your password? Contact your branch administrator.
+            {t('auth.forgotPassword')}
           </Typography>
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   Typography, Divider, alpha, useMediaQuery, useTheme,
@@ -21,24 +22,24 @@ import { PERMISSIONS, type PermissionCode } from '@bccs/shared';
 const SIDEBAR_WIDTH = 240;
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   path: string;
   icon: React.ReactNode;
   permission?: PermissionCode;
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-  { label: 'Members', path: '/members', icon: <PeopleIcon /> },
-  { label: 'Accounts', path: '/accounts', icon: <AccountBalanceIcon /> },
-  { label: 'Transactions', path: '/transactions', icon: <ReceiptLongIcon /> },
-  { label: 'Loans', path: '/loans', icon: <CreditScoreIcon /> },
-  { label: 'Passbook', path: '/passbook', icon: <MenuBookIcon /> },
-  { label: 'Expenses', path: '/expenses', icon: <PaymentsIcon /> },
-  { label: 'Reports', path: '/reports', icon: <AssessmentIcon />, permission: PERMISSIONS.REPORT_READ },
-  { label: 'Staff', path: '/staff', icon: <BadgeIcon />, permission: PERMISSIONS.STAFF_MANAGE },
-  { label: 'Audit Logs', path: '/audit', icon: <HistoryIcon />, permission: PERMISSIONS.AUDIT_READ },
-  { label: 'Settings', path: '/settings', icon: <SettingsIcon />, permission: PERMISSIONS.CONFIG_MANAGE },
+  { labelKey: 'nav.dashboard', path: '/', icon: <DashboardIcon /> },
+  { labelKey: 'nav.members', path: '/members', icon: <PeopleIcon /> },
+  { labelKey: 'nav.accounts', path: '/accounts', icon: <AccountBalanceIcon /> },
+  { labelKey: 'nav.transactions', path: '/transactions', icon: <ReceiptLongIcon /> },
+  { labelKey: 'nav.loans', path: '/loans', icon: <CreditScoreIcon /> },
+  { labelKey: 'nav.passbook', path: '/passbook', icon: <MenuBookIcon /> },
+  { labelKey: 'nav.expenses', path: '/expenses', icon: <PaymentsIcon /> },
+  { labelKey: 'nav.reports', path: '/reports', icon: <AssessmentIcon />, permission: PERMISSIONS.REPORT_READ },
+  { labelKey: 'nav.staff', path: '/staff', icon: <BadgeIcon />, permission: PERMISSIONS.STAFF_MANAGE },
+  { labelKey: 'nav.auditLogs', path: '/audit', icon: <HistoryIcon />, permission: PERMISSIONS.AUDIT_READ },
+  { labelKey: 'nav.settings', path: '/settings', icon: <SettingsIcon />, permission: PERMISSIONS.CONFIG_MANAGE },
 ];
 
 interface Props {
@@ -47,6 +48,7 @@ interface Props {
 }
 
 export default function Sidebar({ open, onClose }: Props) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
@@ -88,10 +90,10 @@ export default function Sidebar({ open, onClose }: Props) {
             sx={{ color: '#C5A572', fontWeight: 700, lineHeight: 1.2, fontSize: '0.9rem' }}
             noWrap
           >
-            Bhagwati Credit
+            {t('common.appName')}
           </Typography>
           <Typography variant="caption" sx={{ color: alpha('#FFF', 0.5), fontSize: '0.68rem' }} noWrap>
-            Co-operative Society Ltd.
+            {t('common.appSubtitle')}
           </Typography>
         </Box>
       </Box>
@@ -136,7 +138,7 @@ export default function Sidebar({ open, onClose }: Props) {
                 {item.icon}
               </ListItemIcon>
               <ListItemText
-                primary={item.label}
+                primary={t(item.labelKey)}
                 primaryTypographyProps={{
                   fontSize: '0.85rem',
                   fontWeight: isActive ? 600 : 500,
@@ -150,7 +152,7 @@ export default function Sidebar({ open, onClose }: Props) {
       {/* Footer */}
       <Box sx={{ px: 2.5, py: 2, borderTop: `1px solid ${alpha('#FFF', 0.08)}` }}>
         <Typography variant="caption" sx={{ color: alpha('#FFF', 0.3), fontSize: '0.65rem' }}>
-          BCCS Banking System v0.1
+          {t('common.systemVersion')}
         </Typography>
       </Box>
     </Box>
