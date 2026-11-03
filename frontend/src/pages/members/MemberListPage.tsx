@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Button, Card, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TablePagination, TextField, MenuItem,
-  InputAdornment, Stack, Typography, useMediaQuery, useTheme,
+  InputAdornment, Stack, Typography, useMediaQuery, useTheme, alpha,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -13,10 +14,12 @@ import { formatDate } from '@/utils/format';
 import StatusChip from '@/components/common/StatusChip';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import EmptyState from '@/components/common/EmptyState';
+import CopyableId from '@/components/common/CopyableId';
 
 const statuses = ['', 'pending', 'active', 'inactive', 'rejected'];
 
 export default function MemberListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -47,25 +50,30 @@ export default function MemberListPage() {
         spacing={2}
         sx={{ mb: 3 }}
       >
-        <Typography variant="h4" fontWeight={700}>Members</Typography>
+        <Box>
+          <Typography variant="h4" fontWeight={700}>{t('members.title')}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+            {total > 0 ? `${total} ${t('members.title').toLowerCase()}` : ''}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => navigate('/members/new')}
           sx={{ alignSelf: { xs: 'stretch', sm: 'auto' } }}
         >
-          New Member
+          {t('members.addMember')}
         </Button>
       </Stack>
 
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ mb: 2, borderRadius: 2.5 }}>
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={1.5}
           sx={{ p: 2 }}
         >
           <TextField
-            size="small" placeholder="Search by name, mobile, membership #..."
+            size="small" placeholder={t('common.search') + '...'}
             value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
             sx={{ flex: 1, minWidth: { sm: 260 } }}
@@ -74,31 +82,30 @@ export default function MemberListPage() {
             select size="small" value={status}
             onChange={(e) => { setStatus(e.target.value); setPage(0); }}
             sx={{ minWidth: { xs: '100%', sm: 150 } }}
-            label="Status"
+            label={t('common.status')}
           >
             {statuses.map((s) => (
-              <MenuItem key={s} value={s} sx={{ textTransform: 'capitalize' }}>{s || 'All Statuses'}</MenuItem>
+              <MenuItem key={s} value={s} sx={{ textTransform: 'capitalize' }}>{s || t('common.allStatuses')}</MenuItem>
             ))}
           </TextField>
         </Stack>
       </Card>
 
-      <Card>
+      <Card sx={{ borderRadius: 2.5, overflow: 'hidden' }}>
         {isLoading ? <LoadingSpinner /> : members.length === 0 ? (
-          <EmptyState message="No members found" />
+          <EmptyState message={t('common.noData')} />
         ) : (
           <>
             <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small" sx={{ minWidth: isMobile ? 600 : 'auto' }}>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Membership #</TableCell>
-                    <TableCell>Full Name</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Mobile</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>City</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Type</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Applied</TableCell>
+                  <TableRow sx={{ '& th': { fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' } }}>
+                    <TableCell>{t('members.membershipNumber')}</TableCell>
+                    <TableCell>{t('members.fullName')}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('members.mobile')}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('members.city')}</TableCell>
+                    <TableCell>{t('common.status')}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{t('common.date')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -107,13 +114,17 @@ export default function MemberListPage() {
                       key={m.id} hover sx={{ cursor: 'pointer' }}
                       onClick={() => navigate(`/members/${m.id}`)}
                     >
-                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{m.membershipNumber ?? '—'}</TableCell>
+                      <TableCell>
+                        {m.membershipNumber
+                          ? <CopyableId value={m.membershipNumber} size="small" variant="inline" />
+                          : <Typography variant="caption" color="text.disabled">Pending</Typography>
+                        }
+                      </TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>{m.fullName}</TableCell>
                       <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{m.mobile}</TableCell>
                       <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{m.city}</TableCell>
-                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' }, textTransform: 'capitalize' }}>{m.membershipType}</TableCell>
                       <TableCell><StatusChip status={m.status} /></TableCell>
-                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{formatDate(m.applicationDate)}</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, color: 'text.secondary', fontSize: '0.8rem' }}>{formatDate(m.applicationDate)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
