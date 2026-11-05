@@ -10,3 +10,7 @@ coverage/
 .nyc_output/
 *.tsbuildinfo
 .vite/
+
+# Build artifacts
+frontend/vite.config.js
+frontend/vite.config.d.ts
