@@ -38,3 +38,4 @@ services:
     name: bccs-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
