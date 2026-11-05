@@ -1,0 +1,25 @@
+[build]
+  base = "."
+  command = "npm ci && npm run build --workspace=shared && npm run build --workspace=frontend"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Proxy all /api calls to the Render backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://bccs-backend.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback — serve index.html for all non-file routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

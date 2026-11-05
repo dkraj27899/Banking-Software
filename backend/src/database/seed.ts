@@ -55,6 +55,26 @@ async function seed(): Promise<void> {
       console.log('IMPORTANT: Change this password on first login.');
     }
 
+    // Seed demo staff users
+    const demoUsers = [
+      { username: 'manager', password: 'Manager@123', fullName: 'Branch Manager', email: 'manager@bccs.local', mobile: '9999999998', role: 'branch_admin' },
+      { username: 'cashier1', password: 'Cashier@123', fullName: 'Ramesh Kumar', email: 'ramesh@bccs.local', mobile: '9999999997', role: 'cashier' },
+      { username: 'cashier2', password: 'Cashier@123', fullName: 'Suresh Sharma', email: 'suresh@bccs.local', mobile: '9999999996', role: 'cashier' },
+    ];
+
+    for (const u of demoUsers) {
+      const ex = await pool.query('SELECT id FROM staff_users WHERE username = $1', [u.username]);
+      if (ex.rows.length === 0) {
+        const hash = await bcrypt.hash(u.password, BCRYPT_ROUNDS);
+        await pool.query(
+          `INSERT INTO staff_users (username, password_hash, full_name, email, mobile, role, branch_id, must_change_password)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, false)`,
+          [u.username, hash, u.fullName, u.email, u.mobile, u.role, branchId],
+        );
+        console.log(`Created demo user '${u.username}' (${u.role}).`);
+      }
+    }
+
     // Seed default account products
     const products = [
       { code: 'SAV001', name: 'Regular Savings Account', type: 'savings', minBal: 100000, rate: 400 },

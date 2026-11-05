@@ -1,0 +1,40 @@
+databases:
+  - name: bccs-db
+    plan: free
+    databaseName: bccs_prod
+    user: bccs_prod
+
+services:
+  - type: web
+    name: bccs-backend
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=backend && npm run migrate --workspace=backend && npm run seed --workspace=backend
+    startCommand: npm run start --workspace=backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bccs-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: bccs-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+  - type: redis
+    name: bccs-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
