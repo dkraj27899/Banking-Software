@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import path from 'node:path';
 import { env } from './config/env.js';
 import { redis } from './config/redis.js';
 import { pool } from './config/database.js';
@@ -29,9 +30,9 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// CORS
+// CORS — same origin in production, configurable in dev
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: env.FRONTEND_URL === '*' ? true : env.FRONTEND_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -92,13 +93,22 @@ app.use('/api/config', configRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// 404 handler
-app.use((_req, res) => {
-  res.status(404).json({
-    success: false,
-    error: { code: 'NOT_FOUND', message: 'Endpoint not found' },
+// In production, serve the React frontend
+if (env.NODE_ENV === 'production') {
+  const frontendDist = path.resolve(import.meta.dirname, '../../frontend/dist');
+  app.use(express.static(frontendDist, { maxAge: '1y', immutable: true }));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
   });
-});
+} else {
+  // 404 handler (dev only — Vite handles frontend in dev)
+  app.use((_req, res) => {
+    res.status(404).json({
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'Endpoint not found' },
+    });
+  });
+}
 
 // Global error handler
 app.use(errorHandler);

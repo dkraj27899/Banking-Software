@@ -6,10 +6,10 @@ databases:
 
 services:
   - type: web
-    name: bccs-backend
+    name: bccs-banking
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=backend && npm run migrate --workspace=backend && npm run seed --workspace=backend
+    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=frontend && npm run build --workspace=backend && npm run migrate --workspace=backend && npm run seed --workspace=backend
     startCommand: npm run start --workspace=backend
     envVars:
       - key: NODE_ENV
@@ -30,7 +30,7 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        sync: false
+        value: "*"
       - key: LOG_LEVEL
         value: info
 

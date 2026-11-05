@@ -4,7 +4,7 @@ const TOKEN_KEY = 'bccs_access_token';
 const REFRESH_KEY = 'bccs_refresh_token';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
 });
