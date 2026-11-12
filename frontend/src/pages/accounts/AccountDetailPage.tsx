@@ -5,14 +5,13 @@ import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, Typography, Grid, Button, Stack,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Breadcrumbs, Link, useMediaQuery, useTheme, alpha, Divider,
+  Breadcrumbs, Link, useMediaQuery, useTheme, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import BlockIcon from '@mui/icons-material/Block';
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
 import { getAccount, approveAccount, changeAccountProduct, closeAccount, listAccountProducts } from '@/api/accounts';
 import { getPassbook } from '@/api/statements';
 import { formatDate, formatINR } from '@/utils/format';
@@ -108,42 +107,28 @@ export default function AccountDetailPage() {
       </Breadcrumbs>
 
       {/* Hero card */}
-      <Card sx={{ mb: 3, borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-          background: 'linear-gradient(90deg, #0A1628, #C5A572)',
-        }} />
-        <CardContent sx={{ p: { xs: 2.5, sm: 3.5 }, pt: { xs: 3, sm: 4 } }}>
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between"
             alignItems={{ xs: 'stretch', sm: 'flex-start' }}
             spacing={2}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box sx={{
-                width: 52, height: 52, borderRadius: 2.5,
-                bgcolor: alpha('#0A1628', 0.06),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <AccountBalanceOutlinedIcon sx={{ fontSize: 26, color: '#0A1628' }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
+                {account.accountNumber ? (
+                  <CopyableId value={account.accountNumber} label="A/C" size="large" />
+                ) : (
+                  <Typography variant="h6" fontWeight={600} color="text.secondary">Pending Account</Typography>
+                )}
+                <StatusChip status={account.status} />
               </Box>
-              <Box>
-                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.5 }}>
-                  {account.accountNumber ? (
-                    <CopyableId value={account.accountNumber} label="A/C" size="large" />
-                  ) : (
-                    <Typography variant="h6" fontWeight={600} color="text.secondary">Pending Account</Typography>
-                  )}
-                  <StatusChip status={account.status} />
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {account.memberName} · {account.productName} · {account.branchName}
-                </Typography>
-              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
+                {account.memberName} · {account.productName} · {account.branchName}
+              </Typography>
             </Box>
-            <Stack direction={{ xs: 'row', sm: 'row' }} spacing={1} flexWrap="wrap" sx={{ pt: { sm: 0.5 } }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pt: { sm: 0.5 } }}>
               {account.status === 'pending' && (
                 <>
                   <Button
@@ -180,7 +165,7 @@ export default function AccountDetailPage() {
                 Passbook
               </Button>
               <Button variant="outlined" size="small" onClick={() => navigate('/accounts')}>Back</Button>
-            </Stack>
+            </Box>
           </Stack>
         </CardContent>
       </Card>
@@ -188,23 +173,17 @@ export default function AccountDetailPage() {
       <Grid container spacing={{ xs: 2, md: 3 }}>
         {/* Account Summary */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ borderRadius: 2.5, height: '100%' }}>
+          <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em' }}>
                 Summary
               </Typography>
 
-              {/* Balance highlight */}
-              <Box sx={{
-                mt: 1.5, mb: 2, p: 2, borderRadius: 2,
-                bgcolor: alpha('#059669', 0.06),
-                border: '1px solid',
-                borderColor: alpha('#059669', 0.12),
-              }}>
+              <Box sx={{ mt: 1.5, mb: 2 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Balance
                 </Typography>
-                <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', fontFamily: 'monospace', color: '#059669', lineHeight: 1.2 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '1.375rem', fontVariantNumeric: 'tabular-nums', color: '#059669', lineHeight: 1.2 }}>
                   {formatINR(account.balancePaise)}
                 </Typography>
               </Box>
@@ -229,7 +208,7 @@ export default function AccountDetailPage() {
 
         {/* Recent Transactions */}
         <Grid item xs={12} md={8}>
-          <Card sx={{ borderRadius: 2.5 }}>
+          <Card>
             <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em', mb: 1.5, display: 'block' }}>
                 Recent Transactions
@@ -240,7 +219,7 @@ export default function AccountDetailPage() {
                 <TableContainer sx={{ overflowX: 'auto' }}>
                   <Table size="small" sx={{ minWidth: isMobile ? 550 : 'auto' }}>
                     <TableHead>
-                      <TableRow sx={{ '& th': { fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' } }}>
+                      <TableRow>
                         <TableCell>Date</TableCell>
                         <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Reference</TableCell>
                         <TableCell>Description</TableCell>

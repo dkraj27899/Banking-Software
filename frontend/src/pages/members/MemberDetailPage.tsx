@@ -4,11 +4,9 @@ import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, Typography, Grid, Button, Stack,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Breadcrumbs, Link, useMediaQuery, useTheme, alpha, Divider,
+  Breadcrumbs, Link, useMediaQuery, useTheme, Divider,
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import { useSnackbar } from 'notistack';
 import { getMember, approveMember, rejectMember } from '@/api/members';
 import { getAccountsByMember } from '@/api/accounts';
@@ -69,44 +67,30 @@ export default function MemberDetailPage() {
         </Typography>
       </Breadcrumbs>
 
-      {/* Hero card with name + membership number */}
-      <Card sx={{ mb: 3, borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-          background: 'linear-gradient(90deg, #0A1628, #C5A572)',
-        }} />
-        <CardContent sx={{ p: { xs: 2.5, sm: 3.5 }, pt: { xs: 3, sm: 4 } }}>
+      {/* Hero card */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between"
             alignItems={{ xs: 'stretch', sm: 'center' }}
             spacing={2}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box sx={{
-                width: 52, height: 52, borderRadius: 2.5,
-                bgcolor: alpha('#0A1628', 0.06),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <PersonOutlinedIcon sx={{ fontSize: 26, color: '#0A1628' }} />
-              </Box>
-              <Box>
-                <Typography variant="h5" fontWeight={700} sx={{ lineHeight: 1.2, mb: 0.5 }}>
-                  {member.fullName}
-                </Typography>
-                <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
-                  {member.membershipNumber ? (
-                    <CopyableId value={member.membershipNumber} label="ID" size="medium" />
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">Pending approval</Typography>
-                  )}
-                  <StatusChip status={member.status} />
-                  <Typography variant="caption" color="text.secondary">{member.branchName}</Typography>
-                </Stack>
+            <Box>
+              <Typography variant="h5" fontWeight={700} sx={{ lineHeight: 1.2, mb: 0.5 }}>
+                {member.fullName}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, rowGap: 0.75 }}>
+                {member.membershipNumber ? (
+                  <CopyableId value={member.membershipNumber} label="ID" size="medium" />
+                ) : (
+                  <Typography variant="caption" color="text.secondary">Pending approval</Typography>
+                )}
+                <StatusChip status={member.status} />
+                <Typography variant="caption" color="text.secondary">{member.branchName}</Typography>
               </Box>
             </Box>
-            <Stack direction={{ xs: 'row', sm: 'row' }} spacing={1} flexWrap="wrap">
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {member.status === 'pending' && (
                 <>
                   <Button variant="contained" color="success" size="small" onClick={() => approve.mutate()} disabled={approve.isPending}>
@@ -118,7 +102,7 @@ export default function MemberDetailPage() {
                 </>
               )}
               <Button variant="outlined" size="small" onClick={() => navigate('/members')}>Back</Button>
-            </Stack>
+            </Box>
           </Stack>
         </CardContent>
       </Card>
@@ -126,7 +110,7 @@ export default function MemberDetailPage() {
       <Grid container spacing={{ xs: 2, md: 3 }}>
         {/* Personal info */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 2.5, height: '100%' }}>
+          <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em' }}>
                 {t('members.personalInfo') || 'Personal'}
@@ -155,7 +139,7 @@ export default function MemberDetailPage() {
 
         {/* Contact */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 2.5, height: '100%' }}>
+          <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em' }}>
                 {t('members.contact') || 'Contact'}
@@ -185,7 +169,7 @@ export default function MemberDetailPage() {
 
         {/* Accounts */}
         <Grid item xs={12}>
-          <Card sx={{ borderRadius: 2.5 }}>
+          <Card>
             <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Stack
                 direction="row"
@@ -197,8 +181,9 @@ export default function MemberDetailPage() {
                   {t('accounts.title') || 'Accounts'}
                 </Typography>
                 {member.status === 'active' && (
-                  <Button size="small" onClick={() => navigate('/accounts/new', { state: { memberId: member.id } })}>
-                    + {t('accounts.openAccount') || 'Open Account'}
+                  <Button variant="contained" size="small" onClick={() => navigate('/accounts/new', { state: { memberId: member.id } })}
+                    sx={{ bgcolor: '#0A1628', color: '#C5A572', fontWeight: 600, fontSize: '0.7rem', '&:hover': { bgcolor: '#162033' } }}>
+                    + {t('accounts.openAccount')}
                   </Button>
                 )}
               </Stack>
@@ -208,7 +193,7 @@ export default function MemberDetailPage() {
                 <TableContainer sx={{ overflowX: 'auto' }}>
                   <Table size="small" sx={{ minWidth: isMobile ? 450 : 'auto' }}>
                     <TableHead>
-                      <TableRow sx={{ '& th': { fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' } }}>
+                      <TableRow>
                         <TableCell>Account #</TableCell>
                         <TableCell>Product</TableCell>
                         <TableCell>Status</TableCell>

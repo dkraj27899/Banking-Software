@@ -27,6 +27,7 @@ export interface Member {
   branchId: string;
   branchName: string;
   createdAt: string;
+  accountCount?: number;
 }
 
 export interface CreateMemberPayload {

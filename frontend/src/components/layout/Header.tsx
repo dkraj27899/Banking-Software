@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   AppBar, Toolbar, Typography, IconButton, Avatar, Menu, MenuItem,
   ListItemIcon, ListItemText, Box, Divider, useMediaQuery, useTheme,
-  Stack, Badge, Popover, List, ListItemButton, Button, Tooltip,
+  Stack, Badge, Popover, List, ListItemButton, Button, Tooltip, alpha,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
@@ -13,8 +13,11 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import CircleIcon from '@mui/icons-material/Circle';
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import { useAuth } from '@/store/authStore';
+import LanguageToggle from '@/components/common/LanguageToggle';
 import {
   getUnreadCount, listNotifications, markNotificationRead, markAllNotificationsRead,
   type Notification,
@@ -36,8 +39,14 @@ function timeAgo(dateStr: string, justNow: string): string {
   return `${days}d ago`;
 }
 
+const notifConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  approval: { icon: <CheckCircleOutlinedIcon sx={{ fontSize: 18 }} />, color: '#D97706', label: 'Approval' },
+  alert:    { icon: <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />,  color: '#DC2626', label: 'Alert' },
+  info:     { icon: <InfoOutlinedIcon sx={{ fontSize: 18 }} />,          color: '#2563EB', label: 'Info' },
+};
+
 export default function Header({ title, onMenuToggle }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -52,10 +61,6 @@ export default function Header({ title, onMenuToggle }: Props) {
     if (h < 17) return t('header.goodAfternoon');
     return t('header.goodEvening');
   })();
-
-  const toggleLanguage = () => {
-    i18n.changeLanguage(i18n.language === 'en' ? 'hi' : 'en');
-  };
 
   const roleName = user?.role ? (t(`roles.${user.role}`) || user.role.replace(/_/g, ' ')) : '';
 
@@ -126,65 +131,20 @@ export default function Header({ title, onMenuToggle }: Props) {
         )}
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '0.95rem' }, lineHeight: 1.3 }}>
+          <Typography variant="body1" noWrap sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '0.95rem' }, lineHeight: 1.3 }}>
             {greeting}, {user?.fullName?.split(' ')[0] ?? 'User'}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
-            {roleName} &middot; {t('common.appName')} {t('common.appSubtitle')}
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: '0.72rem', display: 'block' }}>
+            {roleName}
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+              {' '}&middot; {t('common.appName')}
+            </Box>
           </Typography>
         </Box>
 
         <Stack direction="row" alignItems="center" spacing={0.5}>
           {/* Language Toggle */}
-          <Tooltip title={i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}>
-            <Box
-              onClick={toggleLanguage}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                cursor: 'pointer',
-                borderRadius: '20px',
-                border: '1.5px solid',
-                borderColor: 'divider',
-                overflow: 'hidden',
-                height: 32,
-                userSelect: 'none',
-                transition: 'border-color 0.2s',
-                '&:hover': { borderColor: '#C5A572' },
-              }}
-            >
-              <Box
-                sx={{
-                  px: 1.2, py: 0.4,
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  borderRadius: '20px',
-                  transition: 'all 0.25s ease',
-                  ...(i18n.language === 'en'
-                    ? { bgcolor: '#C5A572', color: '#FFF' }
-                    : { bgcolor: 'transparent', color: 'text.secondary' }),
-                }}
-              >
-                EN
-              </Box>
-              <Box
-                sx={{
-                  px: 1.2, py: 0.4,
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  borderRadius: '20px',
-                  transition: 'all 0.25s ease',
-                  ...(i18n.language === 'hi'
-                    ? { bgcolor: '#C5A572', color: '#FFF' }
-                    : { bgcolor: 'transparent', color: 'text.secondary' }),
-                }}
-              >
-                हि
-              </Box>
-            </Box>
-          </Tooltip>
+          <LanguageToggle />
 
           {/* Notifications */}
           <IconButton
@@ -205,10 +165,8 @@ export default function Header({ title, onMenuToggle }: Props) {
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" sx={{ ml: 0.5 }}>
             <Avatar
               sx={{
-                width: 34, height: 34,
-                bgcolor: 'secondary.main',
-                color: 'primary.main',
-                fontSize: '0.75rem',
+                width: 32, height: 32,
+                fontSize: '0.7rem',
                 fontWeight: 700,
               }}
             >
@@ -227,62 +185,109 @@ export default function Header({ title, onMenuToggle }: Props) {
           slotProps={{
             paper: {
               sx: {
-                mt: 1.5, width: 380, maxHeight: 480, borderRadius: 2,
+                mt: 1.5, width: { xs: 'calc(100vw - 32px)', sm: 380 }, maxWidth: 380, maxHeight: 480, borderRadius: 2,
                 boxShadow: '0 10px 40px -10px rgba(10,22,40,0.18)',
               },
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
-            <Typography variant="subtitle2" fontWeight={700}>{t('header.notifications')}</Typography>
+          <Box sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            px: 2, py: 1.5,
+            bgcolor: '#0A1628',
+            borderRadius: '8px 8px 0 0',
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#FFF' }}>
+                {t('header.notifications')}
+              </Typography>
+              {unreadCount > 0 && (
+                <Box sx={{
+                  bgcolor: '#DC2626', color: '#FFF',
+                  fontSize: '0.6rem', fontWeight: 700,
+                  px: 0.7, py: 0.15, borderRadius: '6px',
+                  lineHeight: 1.3, minWidth: 18, textAlign: 'center',
+                }}>
+                  {unreadCount}
+                </Box>
+              )}
+            </Box>
             {unreadCount > 0 && (
               <Button
                 size="small"
-                startIcon={<DoneAllIcon sx={{ fontSize: 16 }} />}
+                startIcon={<DoneAllIcon sx={{ fontSize: 14 }} />}
                 onClick={() => markAll.mutate()}
-                sx={{ fontSize: '0.7rem', textTransform: 'none' }}
+                sx={{ fontSize: '0.68rem', textTransform: 'none', color: '#C5A572', '&:hover': { bgcolor: alpha('#C5A572', 0.1) } }}
               >
                 {t('header.markAllRead')}
               </Button>
             )}
           </Box>
-          <Divider />
           {notifications.length === 0 ? (
             <Box sx={{ py: 5, textAlign: 'center' }}>
+              <NotificationsNoneIcon sx={{ fontSize: 36, color: 'text.disabled', mb: 1 }} />
               <Typography variant="body2" color="text.secondary">{t('header.noNotifications')}</Typography>
             </Box>
           ) : (
             <List disablePadding sx={{ maxHeight: 380, overflow: 'auto' }}>
-              {notifications.map((n) => (
-                <ListItemButton
-                  key={n.id}
-                  onClick={() => handleNotifClick(n)}
-                  sx={{
-                    px: 2, py: 1.5,
-                    bgcolor: n.isRead ? 'transparent' : 'action.hover',
-                    borderBottom: '1px solid', borderColor: 'divider',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
-                      {!n.isRead && <CircleIcon sx={{ fontSize: 8, color: 'primary.main' }} />}
-                      <Typography variant="body2" fontWeight={n.isRead ? 400 : 600} noWrap>
-                        {n.title}
+              {notifications.map((n) => {
+                const cfg = notifConfig[n.type] ?? notifConfig.info!;
+                return (
+                  <ListItemButton
+                    key={n.id}
+                    onClick={() => handleNotifClick(n)}
+                    sx={{
+                      px: 2, py: 1.5,
+                      bgcolor: n.isRead ? 'transparent' : alpha(cfg.color, 0.04),
+                      borderBottom: '1px solid', borderColor: 'divider',
+                      borderLeft: n.isRead ? '3px solid transparent' : `3px solid ${cfg.color}`,
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      transition: 'background-color 0.15s ease',
+                      '&:hover': { bgcolor: alpha(cfg.color, 0.06) },
+                    }}
+                  >
+                    {/* Type icon */}
+                    <Box sx={{
+                      width: 30, height: 30, borderRadius: 1, flexShrink: 0, mt: 0.25,
+                      bgcolor: alpha(cfg.color, 0.08),
+                      color: cfg.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {cfg.icon}
+                    </Box>
+
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.2 }}>
+                        <Typography variant="body2" fontWeight={n.isRead ? 500 : 700} noWrap sx={{ fontSize: '0.8125rem' }}>
+                          {n.title}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontSize: '0.6rem', fontWeight: 700,
+                            color: cfg.color, bgcolor: alpha(cfg.color, 0.1),
+                            px: 0.8, py: 0.2, borderRadius: '4px',
+                            textTransform: 'uppercase', letterSpacing: '0.04em',
+                            flexShrink: 0, lineHeight: 1.3,
+                          }}
+                        >
+                          {cfg.label}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden', lineHeight: 1.45, fontSize: '0.75rem',
+                      }}>
+                        {n.message}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem', mt: 0.4, display: 'block' }}>
+                        {timeAgo(n.createdAt, t('header.justNow'))}
                       </Typography>
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden', lineHeight: 1.4,
-                    }}>
-                      {n.message}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem', mt: 0.5, display: 'block' }}>
-                      {timeAgo(n.createdAt, t('header.justNow'))}
-                    </Typography>
-                  </Box>
-                </ListItemButton>
-              ))}
+                  </ListItemButton>
+                );
+              })}
             </List>
           )}
         </Popover>

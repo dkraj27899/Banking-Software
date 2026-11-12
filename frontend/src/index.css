@@ -2,12 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background-color: #f8f9fa;
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Prevent text overflow on small screens */
+.MuiTypography-root {
+  word-break: break-word;
+}
+
+/* Responsive table pagination for mobile */
+@media (max-width: 600px) {
+  .MuiTablePagination-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 8px !important;
+  }
+  .MuiTablePagination-spacer {
+    display: none;
+  }
+  .MuiTablePagination-selectLabel,
+  .MuiTablePagination-displayedRows {
+    font-size: 0.75rem !important;
+  }
 }
 
 /* Scrollbar styling */

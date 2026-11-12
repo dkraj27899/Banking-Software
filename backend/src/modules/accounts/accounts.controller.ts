@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { query, withTransaction } from '../../config/database.js';
 import { logAudit } from '../../middleware/auditLog.js';
 import { notifyApprovers } from '../notifications/notifications.service.js';
+import { sendAccountOpened, sendAccountClosed } from '../../services/sms.service.js';
 
 const PRODUCT_GL_MAP: Record<string, string> = {
   savings: '2100',
@@ -341,6 +342,19 @@ export async function approveAccount(req: Request, res: Response, next: NextFunc
       branchId: req.user!.branchId,
     });
 
+    const memberInfo = await query<{ mobile: string; full_name: string; product_name: string }>(
+      `SELECT m.mobile, m.full_name, p.name AS product_name
+       FROM accounts a
+       JOIN members m ON a.member_id = m.id
+       JOIN account_products p ON a.product_id = p.id
+       WHERE a.id = $1`,
+      [id],
+    );
+    if (memberInfo.rows[0]) {
+      const mi = memberInfo.rows[0];
+      sendAccountOpened(mi.mobile, mi.full_name, accountNumber, mi.product_name);
+    }
+
     res.json({ success: true, data: { accountNumber, message: 'Account approved and activated' } });
   } catch (err: any) {
     if (err.statusCode) {
@@ -387,6 +401,16 @@ export async function closeAccount(req: Request, res: Response, next: NextFuncti
       ipAddress: String(req.ip ?? 'unknown'),
       branchId: req.user!.branchId,
     });
+
+    const closeInfo = await query<{ mobile: string; full_name: string; account_number: string }>(
+      `SELECT m.mobile, m.full_name, a.account_number
+       FROM accounts a JOIN members m ON a.member_id = m.id WHERE a.id = $1`,
+      [id],
+    );
+    if (closeInfo.rows[0]) {
+      const ci = closeInfo.rows[0];
+      sendAccountClosed(ci.mobile, ci.full_name, ci.account_number);
+    }
 
     res.json({ success: true, data: { message: 'Account closed' } });
   } catch (err) {

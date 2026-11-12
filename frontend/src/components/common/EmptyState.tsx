@@ -11,21 +11,13 @@ interface Props {
 
 export default function EmptyState({ icon: Icon = InboxIcon, title, message, description }: Props) {
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight={260}
-      gap={1.5}
-      py={6}
-    >
-      <Icon sx={{ fontSize: 56, color: 'text.disabled' }} />
-      <Typography variant="h6" color="text.secondary">
+    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight={140} gap={0.5} py={4}>
+      <Icon sx={{ fontSize: 32, color: 'text.disabled', mb: 0.5 }} />
+      <Typography variant="body2" color="text.secondary" fontWeight={500}>
         {title ?? message ?? 'No data'}
       </Typography>
       {description && (
-        <Typography variant="body2" color="text.disabled" textAlign="center" maxWidth={360}>
+        <Typography variant="caption" color="text.disabled" textAlign="center" maxWidth={320}>
           {description}
         </Typography>
       )}

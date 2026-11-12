@@ -33,6 +33,7 @@ interface MemberRow {
   created_by_name: string;
   created_at: string;
   updated_at: string;
+  account_count?: string;
 }
 
 function mapMember(row: MemberRow) {
@@ -66,6 +67,7 @@ function mapMember(row: MemberRow) {
     createdByName: row.created_by_name,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    accountCount: row.account_count != null ? parseInt(String(row.account_count), 10) : undefined,
   };
 }
 
@@ -108,11 +110,17 @@ export async function listMembers(req: Request, res: Response, next: NextFunctio
     const dataResult = await query<MemberRow>(
       `SELECT m.*, b.name AS branch_name,
               cb.full_name AS created_by_name,
-              ab.full_name AS approved_by_name
+              ab.full_name AS approved_by_name,
+              COALESCE(ac.account_count, 0) AS account_count
        FROM members m
        JOIN branches b ON m.branch_id = b.id
        JOIN staff_users cb ON m.created_by = cb.id
        LEFT JOIN staff_users ab ON m.approved_by = ab.id
+       LEFT JOIN (
+         SELECT member_id, COUNT(*) AS account_count
+         FROM accounts WHERE status IN ('pending','active')
+         GROUP BY member_id
+       ) ac ON m.id = ac.member_id
        ${whereClause}
        ORDER BY m.created_at DESC
        LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,

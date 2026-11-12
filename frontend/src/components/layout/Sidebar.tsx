@@ -19,7 +19,7 @@ import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import { useAuth } from '@/store/authStore';
 import { PERMISSIONS, type PermissionCode } from '@bccs/shared';
 
-const SIDEBAR_WIDTH = 240;
+const SIDEBAR_WIDTH = 220;
 
 interface NavItem {
   labelKey: string;
@@ -55,53 +55,33 @@ export default function Sidebar({ open, onClose }: Props) {
   const { user } = useAuth();
 
   const visibleItems = useMemo(() =>
-    navItems.filter((item) =>
-      !item.permission || user?.permissions.includes(item.permission)
-    ),
+    navItems.filter((item) => !item.permission || user?.permissions.includes(item.permission)),
     [user],
   );
 
   const drawerContent = (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        bgcolor: '#0A1628',
-        color: '#FFFFFF',
-      }}
-    >
-      {/* Logo / Society Name */}
-      <Box sx={{ px: 2.5, py: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box
-          sx={{
-            width: 40, height: 40, borderRadius: 2,
-            background: 'linear-gradient(135deg, #C5A572 0%, #A67D4A 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 800, fontSize: '1.1rem', color: '#0A1628',
-            flexShrink: 0,
-          }}
-        >
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#0A1628', color: '#FFFFFF' }}>
+      <Box sx={{ px: 2, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{
+          width: 32, height: 32, borderRadius: 1, bgcolor: '#C5A572',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 800, fontSize: '0.8rem', color: '#0A1628', flexShrink: 0,
+        }}>
           BC
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ color: '#C5A572', fontWeight: 700, lineHeight: 1.2, fontSize: '0.9rem' }}
-            noWrap
-          >
+          <Typography noWrap sx={{ color: '#FFFFFF', fontWeight: 600, lineHeight: 1.2, fontSize: '0.8125rem' }}>
             {t('common.appName')}
           </Typography>
-          <Typography variant="caption" sx={{ color: alpha('#FFF', 0.5), fontSize: '0.68rem' }} noWrap>
+          <Typography noWrap sx={{ color: alpha('#FFF', 0.45), fontSize: '0.65rem' }}>
             {t('common.appSubtitle')}
           </Typography>
         </Box>
       </Box>
 
-      <Divider sx={{ borderColor: alpha('#FFF', 0.08), mx: 2 }} />
+      <Divider sx={{ borderColor: alpha('#FFF', 0.08), mx: 1.5 }} />
 
-      {/* Navigation */}
-      <List sx={{ flex: 1, px: 1.5, py: 2, overflowY: 'auto' }}>
+      <List sx={{ flex: 1, px: 1, py: 1, overflowY: 'auto' }}>
         {visibleItems.map((item) => {
           const isActive = item.path === '/'
             ? location.pathname === '/'
@@ -114,44 +94,30 @@ export default function Sidebar({ open, onClose }: Props) {
               to={item.path}
               onClick={isMobile ? onClose : undefined}
               sx={{
-                mb: 0.5,
-                borderRadius: 2,
-                py: 1.1,
+                mb: 0.25,
+                borderRadius: 1,
+                py: 0.85,
                 px: 1.5,
-                color: isActive ? '#C5A572' : alpha('#FFF', 0.7),
-                bgcolor: isActive ? alpha('#C5A572', 0.1) : 'transparent',
-                borderLeft: isActive ? '3px solid #C5A572' : '3px solid transparent',
-                '&:hover': {
-                  bgcolor: alpha('#FFF', 0.06),
-                  color: '#FFFFFF',
-                },
-                transition: 'all 0.15s ease',
+                color: isActive ? '#FFFFFF' : alpha('#FFF', 0.6),
+                bgcolor: isActive ? alpha('#FFFFFF', 0.08) : 'transparent',
+                '&:hover': { bgcolor: alpha('#FFF', 0.06), color: '#FFFFFF' },
+                transition: 'all 0.1s ease',
               }}
             >
-              <ListItemIcon
-                sx={{
-                  color: 'inherit',
-                  minWidth: 36,
-                  '& .MuiSvgIcon-root': { fontSize: 20 },
-                }}
-              >
+              <ListItemIcon sx={{ color: 'inherit', minWidth: 32, '& .MuiSvgIcon-root': { fontSize: 18 } }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText
                 primary={t(item.labelKey)}
-                primaryTypographyProps={{
-                  fontSize: '0.85rem',
-                  fontWeight: isActive ? 600 : 500,
-                }}
+                primaryTypographyProps={{ fontSize: '0.8125rem', fontWeight: isActive ? 600 : 400 }}
               />
             </ListItemButton>
           );
         })}
       </List>
 
-      {/* Footer */}
-      <Box sx={{ px: 2.5, py: 2, borderTop: `1px solid ${alpha('#FFF', 0.08)}` }}>
-        <Typography variant="caption" sx={{ color: alpha('#FFF', 0.3), fontSize: '0.65rem' }}>
+      <Box sx={{ px: 2, py: 1.5, borderTop: `1px solid ${alpha('#FFF', 0.06)}` }}>
+        <Typography sx={{ color: alpha('#FFF', 0.25), fontSize: '0.6rem' }}>
           {t('common.systemVersion')}
         </Typography>
       </Box>
@@ -161,16 +127,9 @@ export default function Sidebar({ open, onClose }: Props) {
   if (isMobile) {
     return (
       <Drawer
-        variant="temporary"
-        open={open}
-        onClose={onClose}
+        variant="temporary" open={open} onClose={onClose}
         ModalProps={{ keepMounted: true }}
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: SIDEBAR_WIDTH,
-            border: 'none',
-          },
-        }}
+        sx={{ '& .MuiDrawer-paper': { width: SIDEBAR_WIDTH, border: 'none' } }}
       >
         {drawerContent}
       </Drawer>
@@ -181,13 +140,8 @@ export default function Sidebar({ open, onClose }: Props) {
     <Drawer
       variant="permanent"
       sx={{
-        width: SIDEBAR_WIDTH,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: SIDEBAR_WIDTH,
-          border: 'none',
-          boxShadow: '2px 0 8px rgba(10,22,40,0.08)',
-        },
+        width: SIDEBAR_WIDTH, flexShrink: 0,
+        '& .MuiDrawer-paper': { width: SIDEBAR_WIDTH, border: 'none' },
       }}
     >
       {drawerContent}

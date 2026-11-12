@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Box, Button, Card, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TablePagination, TextField, MenuItem,
-  InputAdornment, Stack, Typography, useMediaQuery, useTheme, alpha,
+  InputAdornment, Stack, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -66,7 +66,7 @@ export default function MemberListPage() {
         </Button>
       </Stack>
 
-      <Card sx={{ mb: 2, borderRadius: 2.5 }}>
+      <Card sx={{ mb: 2 }}>
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={1.5}
@@ -91,7 +91,7 @@ export default function MemberListPage() {
         </Stack>
       </Card>
 
-      <Card sx={{ borderRadius: 2.5, overflow: 'hidden' }}>
+      <Card sx={{ overflow: 'hidden' }}>
         {isLoading ? <LoadingSpinner /> : members.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
@@ -99,7 +99,7 @@ export default function MemberListPage() {
             <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small" sx={{ minWidth: isMobile ? 600 : 'auto' }}>
                 <TableHead>
-                  <TableRow sx={{ '& th': { fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' } }}>
+                  <TableRow>
                     <TableCell>{t('members.membershipNumber')}</TableCell>
                     <TableCell>{t('members.fullName')}</TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('members.mobile')}</TableCell>

@@ -142,6 +142,13 @@ const hi = {
       appSubmitted: 'सदस्यता आवेदन जमा किया गया',
       approveConfirm: 'क्या आप इस सदस्य को स्वीकृत करना चाहते हैं?',
       rejectReason: 'अस्वीकृति का कारण',
+      memberType: 'सदस्यता प्रकार',
+      fatherGuardian: 'पिता / अभिभावक',
+      dob: 'जन्म तिथि',
+      appliedOn: 'आवेदन तिथि',
+      approvedOn: 'स्वीकृति तिथि',
+      contact: 'संपर्क',
+      address: 'पता',
     },
 
     // Accounts
@@ -161,6 +168,7 @@ const hi = {
       closeAccount: 'खाता बंद करें',
       changeProduct: 'खाता उत्पाद बदलें',
       closureReason: 'बंद करने का कारण',
+      openAccount: 'खाता खोलें',
     },
 
     // Transactions

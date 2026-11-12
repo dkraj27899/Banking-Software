@@ -5,21 +5,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, TextField, Button, Typography,
-  InputAdornment, IconButton, Alert, CircularProgress, alpha, Tooltip,
+  InputAdornment, IconButton, Alert, CircularProgress,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import TranslateIcon from '@mui/icons-material/Translate';
 import { loginSchema } from '@bccs/shared';
 import { useAuth } from '@/store/authStore';
+import LanguageToggle from '@/components/common/LanguageToggle';
 import type { z } from 'zod';
 
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -46,10 +46,6 @@ export default function LoginPage() {
     }
   };
 
-  const toggleLanguage = () => {
-    i18n.changeLanguage(i18n.language === 'en' ? 'hi' : 'en');
-  };
-
   return (
     <Box
       sx={{
@@ -63,47 +59,14 @@ export default function LoginPage() {
       }}
     >
       {/* Language toggle on login page */}
-      <Tooltip title={i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}>
-        <IconButton
-          onClick={toggleLanguage}
-          sx={{
-            position: 'absolute',
-            top: 20,
-            right: 20,
-            color: alpha('#FFF', 0.6),
-            border: '1px solid',
-            borderColor: alpha('#FFF', 0.2),
-            borderRadius: 2,
-            px: 1.5,
-            py: 0.5,
-            gap: 0.5,
-            '&:hover': { borderColor: alpha('#C5A572', 0.5), color: '#C5A572' },
-          }}
-        >
-          <TranslateIcon sx={{ fontSize: 18 }} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-            {i18n.language === 'en' ? 'हिन्दी' : 'English'}
-          </span>
-        </IconButton>
-      </Tooltip>
-
-      {/* Subtle decorative elements */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: -200, right: -200,
-          width: 500, height: 500,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${alpha('#C5A572', 0.06)} 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }}
-      />
+      <Box sx={{ position: 'absolute', top: 20, right: 20 }}>
+        <LanguageToggle dark />
+      </Box>
 
       <Card
         sx={{
           width: '100%',
           maxWidth: 420,
-          borderRadius: 3,
           boxShadow: '0 25px 60px -12px rgba(0,0,0,0.4)',
           overflow: 'visible',
           position: 'relative',
@@ -114,14 +77,13 @@ export default function LoginPage() {
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Box
               sx={{
-                width: 64, height: 64, borderRadius: 3,
-                background: 'linear-gradient(135deg, #C5A572 0%, #A67D4A 100%)',
+                width: 48, height: 48, borderRadius: 1.5,
+                bgcolor: '#C5A572',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                mb: 2.5,
-                boxShadow: '0 8px 24px rgba(197,165,114,0.3)',
+                mb: 2,
               }}
             >
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#0A1628' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '1.125rem', color: '#0A1628' }}>
                 BC
               </Typography>
             </Box>

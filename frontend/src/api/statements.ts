@@ -89,3 +89,76 @@ export async function getReportDailyCash(date?: string) {
   }>>('/reports/daily-cash', { params: { date } });
   return data.data;
 }
+
+export async function getMonthlyTransactions(month?: string) {
+  const { data } = await api.get<ApiResponse<{
+    month: string;
+    totalDepositsPaise: number;
+    totalWithdrawalsPaise: number;
+    netCashPaise: number;
+    totalTransactions: number;
+    activeDays: number;
+    daily: { date: string; depositsPaise: number; withdrawalsPaise: number; count: number }[];
+    byType: { type: string; totalPaise: number; count: number }[];
+  }>>('/reports/monthly-transactions', { params: { month } });
+  return data.data;
+}
+
+export async function getMemberGrowth(months?: number) {
+  const { data } = await api.get<ApiResponse<{
+    totalActive: number;
+    totalPending: number;
+    totalInactive: number;
+    totalRejected: number;
+    monthly: { month: string; newMembers: number }[];
+    byType: { type: string; count: number }[];
+  }>>('/reports/member-growth', { params: { months } });
+  return data.data;
+}
+
+export async function getLoanPortfolio() {
+  const { data } = await api.get<ApiResponse<{
+    activeLoans: number;
+    totalDisbursedPaise: number;
+    totalOutstandingPaise: number;
+    closedLoans: number;
+    overdueLoans: number;
+    totalOverduePaise: number;
+    byProduct: { product: string; count: number; principalPaise: number; outstandingPaise: number; avgRateBps: number }[];
+  }>>('/reports/loan-portfolio');
+  return data.data;
+}
+
+export async function getExpenseSummary(month?: string) {
+  const { data } = await api.get<ApiResponse<{
+    month: string;
+    totalPaise: number;
+    totalCount: number;
+    previousMonthPaise: number;
+    byCategory: { category: string; count: number; totalPaise: number }[];
+  }>>('/reports/expense-summary', { params: { month } });
+  return data.data;
+}
+
+export async function getTrialBalance(asOf?: string) {
+  const { data } = await api.get<ApiResponse<{
+    asOf: string;
+    accounts: { code: string; name: string; type: string; debitPaise: number; creditPaise: number }[];
+    totalDebitPaise: number;
+    totalCreditPaise: number;
+    isBalanced: boolean;
+  }>>('/reports/trial-balance', { params: { asOf } });
+  return data.data;
+}
+
+export async function getGeneralLedger(account?: string, month?: string) {
+  const { data } = await api.get<ApiResponse<{
+    account: { code: string; name: string; type: string };
+    month: string;
+    openingBalancePaise: number;
+    closingBalancePaise: number;
+    entries: { date: string; entryNumber: string; description: string; debitPaise: number; creditPaise: number; balancePaise: number }[];
+    availableAccounts: { code: string; name: string }[];
+  }>>('/reports/general-ledger', { params: { account, month } });
+  return data.data;
+}

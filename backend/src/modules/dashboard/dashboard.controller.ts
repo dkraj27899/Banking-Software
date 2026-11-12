@@ -3,7 +3,7 @@ import { query } from '../../config/database.js';
 
 export async function getDashboardStats(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const [members, accounts, deposits, pendingTxns, todayTxns, recentTxns] = await Promise.all([
+    const [members, accounts, deposits, pendingTxns, todayTxns, recentTxns, memberGrowth, dailyCashFlow] = await Promise.all([
       query<{ total: string; active: string; pending: string }>(
         `SELECT
           COUNT(*) AS total,
@@ -51,6 +51,24 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
          JOIN members m ON a.member_id = m.id
          ORDER BY t.created_at DESC LIMIT 10`,
       ),
+      query<{ month: string; new_members: string }>(
+        `SELECT to_char(date_trunc('month', COALESCE(approval_date, application_date)), 'YYYY-MM') AS month,
+                COUNT(*) AS new_members
+         FROM members
+         WHERE status IN ('active', 'pending')
+           AND COALESCE(approval_date, application_date) >= (CURRENT_DATE - INTERVAL '6 months')
+         GROUP BY 1
+         ORDER BY 1`,
+      ),
+      query<{ day: string; deposits: string; withdrawals: string }>(
+        `SELECT d::date AS day,
+                COALESCE(SUM(t.amount_paise) FILTER (WHERE t.transaction_type IN ('cash_deposit','loan_disbursement','interest_posting')), 0) AS deposits,
+                COALESCE(SUM(t.amount_paise) FILTER (WHERE t.transaction_type IN ('cash_withdrawal','loan_repayment','fee_charge')), 0) AS withdrawals
+         FROM generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, '1 day') AS d
+         LEFT JOIN transactions t ON t.posted_at::date = d AND t.status = 'posted'
+         GROUP BY 1
+         ORDER BY 1`,
+      ),
     ]);
 
     const memberStats = members.rows[0]!;
@@ -96,6 +114,15 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
           memberName: r.member_name,
           accountNumber: r.account_number,
           createdAt: r.created_at,
+        })),
+        memberGrowth: memberGrowth.rows.map((r) => ({
+          month: r.month,
+          newMembers: parseInt(r.new_members, 10),
+        })),
+        dailyCashFlow: dailyCashFlow.rows.map((r) => ({
+          day: r.day,
+          depositsPaise: Number(r.deposits),
+          withdrawalsPaise: Number(r.withdrawals),
         })),
       },
     });

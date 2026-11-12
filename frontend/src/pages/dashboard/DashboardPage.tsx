@@ -2,74 +2,22 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Grid, Card, CardContent, Typography, alpha, Skeleton, CardActionArea,
+  Box, Grid, Typography, Skeleton, ButtonBase, Card, CardContent,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
 } from '@mui/material';
-import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
-import TrendingUpOutlinedIcon from '@mui/icons-material/TrendingUpOutlined';
-import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
-import CreditScoreOutlinedIcon from '@mui/icons-material/CreditScoreOutlined';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
-import PersonAddAlt1OutlinedIcon from '@mui/icons-material/PersonAddAlt1Outlined';
-import AddCardOutlinedIcon from '@mui/icons-material/AddCardOutlined';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import { getDashboardStats, type DashboardStats } from '@/api/dashboard';
-import { formatINR } from '@/utils/format';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
+import { getDashboardStats } from '@/api/dashboard';
+import { formatINR, formatDate } from '@/utils/format';
+import StatusChip from '@/components/common/StatusChip';
 
-interface StatCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: string;
-  bgColor: string;
-  loading?: boolean;
-}
+const MEMBERSHIP_FEE_PAISE = 10000;
 
-function StatCard({ icon, label, value, color, bgColor, loading }: StatCardProps) {
-  return (
-    <Card sx={{
-      height: '100%',
-      position: 'relative',
-      overflow: 'hidden',
-      '&::before': {
-        content: '""', position: 'absolute', top: 0, left: 0, right: 0,
-        height: 3, background: color,
-      },
-    }}>
-      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="caption" sx={{
-              color: 'text.secondary', mb: 0.75, display: 'block',
-              fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: '0.65rem',
-            }}>
-              {label}
-            </Typography>
-            {loading ? (
-              <Skeleton width={80} height={36} />
-            ) : (
-              <Typography sx={{
-                fontWeight: 800, color: 'text.primary',
-                fontSize: { xs: '1.25rem', sm: '1.5rem' },
-                lineHeight: 1.2,
-              }}>
-                {value}
-              </Typography>
-            )}
-          </Box>
-          <Box sx={{
-            width: { xs: 40, sm: 44 }, height: { xs: 40, sm: 44 }, borderRadius: 2.5,
-            bgcolor: bgColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: color, flexShrink: 0,
-            '& .MuiSvgIcon-root': { fontSize: { xs: 20, sm: 22 } },
-          }}>
-            {icon}
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
+function paise2Lakh(p: number) {
+  return +(p / 10000000).toFixed(2);
 }
 
 export default function DashboardPage() {
@@ -81,99 +29,239 @@ export default function DashboardPage() {
     refetchInterval: 60_000,
   });
 
-  const stats: StatCardProps[] = [
-    {
-      icon: <PeopleAltOutlinedIcon />, label: t('dashboard.activeMembers'),
-      value: data ? String(data.members.active) : '0',
-      color: '#2563EB', bgColor: alpha('#2563EB', 0.08),
-    },
-    {
-      icon: <AccountBalanceOutlinedIcon />, label: t('dashboard.activeAccounts'),
-      value: data ? String(data.accounts.active) : '0',
-      color: '#059669', bgColor: alpha('#059669', 0.08),
-    },
-    {
-      icon: <TrendingUpOutlinedIcon />, label: t('dashboard.todaysVolume'),
-      value: data ? formatINR(data.today.depositsPaise + data.today.withdrawalsPaise) : formatINR(0),
-      color: '#7C3AED', bgColor: alpha('#7C3AED', 0.08),
-    },
-    {
-      icon: <PendingActionsOutlinedIcon />, label: t('dashboard.pendingApprovals'),
-      value: data ? String(data.pendingAuthorizations.count) : '0',
-      color: '#D97706', bgColor: alpha('#D97706', 0.08),
-    },
-    {
-      icon: <CreditScoreOutlinedIcon />, label: t('dashboard.totalDeposits'),
-      value: data ? formatINR(data.accounts.totalBalancePaise) : formatINR(0),
-      color: '#0891B2', bgColor: alpha('#0891B2', 0.08),
-    },
-    {
-      icon: <WarningAmberOutlinedIcon />, label: t('dashboard.pendingMembers'),
-      value: data ? String(data.members.pending) : '0',
-      color: '#DC2626', bgColor: alpha('#DC2626', 0.08),
-    },
-  ];
+  const depositBalance = data
+    ? data.depositBreakdown
+        .filter((d) => d.productType !== 'share_capital')
+        .reduce((sum, d) => sum + d.balancePaise, 0)
+    : 0;
 
-  const quickActions = [
-    { icon: <PersonAddAlt1OutlinedIcon />, label: t('dashboard.newMember'), desc: t('dashboard.registerMember'), path: '/members/new', color: '#2563EB' },
-    { icon: <AddCardOutlinedIcon />, label: t('dashboard.newAccount'), desc: t('dashboard.openAccount'), path: '/accounts/new', color: '#059669' },
-    { icon: <AddCircleOutlineIcon />, label: t('dashboard.newTransaction'), desc: t('dashboard.depositOrWithdraw'), path: '/transactions/new', color: '#7C3AED' },
-    { icon: <AssessmentOutlinedIcon />, label: t('dashboard.viewReports'), desc: t('dashboard.financialReports'), path: '/reports', color: '#D97706' },
+  const membershipFeesCollected = data
+    ? data.members.active * MEMBERSHIP_FEE_PAISE
+    : 0;
+
+  const cashFlowData = (data?.dailyCashFlow ?? []).map((d) => ({
+    day: new Date(d.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+    Deposits: paise2Lakh(d.depositsPaise),
+    Withdrawals: paise2Lakh(d.withdrawalsPaise),
+  }));
+
+  const memberGrowthData = (data?.memberGrowth ?? []).map((d) => ({
+    month: new Date(d.month + '-01').toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
+    'New Members': d.newMembers,
+  }));
+
+  const actions = [
+    { label: t('dashboard.newMember'), path: '/members/new' },
+    { label: t('dashboard.newAccount'), path: '/accounts/new' },
+    { label: t('dashboard.newTransaction'), path: '/transactions/new' },
+    { label: t('dashboard.viewReports'), path: '/reports' },
   ];
 
   return (
     <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>{t('dashboard.title')}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('dashboard.subtitle')}
-        </Typography>
-      </Box>
+      <Typography variant="h4" fontWeight={700} sx={{ mb: 2.5 }}>{t('dashboard.title')}</Typography>
 
-      <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }} sx={{ mb: { xs: 3, md: 4 } }}>
-        {stats.map((stat) => (
-          <Grid item xs={6} md={4} key={stat.label}>
-            <StatCard {...stat} loading={isLoading} />
-          </Grid>
-        ))}
+      {/* Top stats row */}
+      <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+        <Grid item xs={6} sm={4} md={2}>
+          <StatTile label={t('dashboard.activeMembers')} value={data ? String(data.members.active) : '—'} loading={isLoading} onClick={() => navigate('/members')} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <StatTile label={t('dashboard.activeAccounts')} value={data ? String(data.accounts.active) : '—'} loading={isLoading} onClick={() => navigate('/accounts')} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <StatTile label={t('dashboard.todaysVolume')} value={data ? formatINR(data.today.depositsPaise + data.today.withdrawalsPaise) : '—'} loading={isLoading} onClick={() => navigate('/transactions')} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <StatTile label={t('dashboard.pendingApprovals')} value={data ? String(data.pendingAuthorizations.count) : '—'} loading={isLoading} warn={data ? data.pendingAuthorizations.count > 0 : false} onClick={() => navigate('/transactions')} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <StatTile label={t('dashboard.pendingMembers')} value={data ? String(data.members.pending) : '—'} loading={isLoading} warn={data ? data.members.pending > 0 : false} onClick={() => navigate('/members')} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <StatTile label="Today Txns" value={data ? String(data.today.transactionCount) : '—'} loading={isLoading} onClick={() => navigate('/transactions')} />
+        </Grid>
       </Grid>
 
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>{t('dashboard.quickActions')}</Typography>
-      <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-        {quickActions.map((action) => (
-          <Grid item xs={6} sm={3} key={action.label}>
-            <Card sx={{
-              height: '100%',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                borderColor: alpha(action.color, 0.3),
-                boxShadow: `0 4px 16px ${alpha(action.color, 0.12)}`,
-                transform: 'translateY(-2px)',
-              },
-            }}>
-              <CardActionArea
-                onClick={() => navigate(action.path)}
-                sx={{ p: { xs: 2, sm: 2.5 }, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start' }}
-              >
-                <Box sx={{
-                  width: 36, height: 36, borderRadius: 2, mb: 1.5,
-                  bgcolor: alpha(action.color, 0.08),
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: action.color,
-                  '& .MuiSvgIcon-root': { fontSize: 18 },
-                }}>
-                  {action.icon}
-                </Box>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 0.25 }}>{action.label}</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  {action.desc}
+      {/* Balance cards row */}
+      <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+        <Grid item xs={12} sm={6}>
+          <Card>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Deposit Balance
+              </Typography>
+              {isLoading ? <Skeleton width={120} height={28} /> : (
+                <Typography sx={{ fontWeight: 700, fontSize: '1.375rem', fontVariantNumeric: 'tabular-nums', color: '#059669', lineHeight: 1.3, mt: 0.25 }}>
+                  {formatINR(depositBalance)}
                 </Typography>
-              </CardActionArea>
-            </Card>
-          </Grid>
-        ))}
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Card>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Membership Fees Collected
+              </Typography>
+              {isLoading ? <Skeleton width={80} height={28} /> : (
+                <Typography sx={{ fontWeight: 700, fontSize: '1.375rem', fontVariantNumeric: 'tabular-nums', color: '#C5A572', lineHeight: 1.3, mt: 0.25 }}>
+                  {formatINR(membershipFeesCollected)}
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Charts row */}
+      <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+        <Grid item xs={12} md={7}>
+          <Card>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em', mb: 1.5, display: 'block' }}>
+                Daily Cash Flow (₹ Lakh)
+              </Typography>
+              {isLoading ? <Skeleton variant="rectangular" height={220} /> : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={cashFlowData} barGap={2} barSize={14}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                    <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} width={40} />
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                      formatter={(v) => [`₹${v}L`]}
+                    />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
+                    <Bar dataKey="Deposits" fill="#059669" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="Withdrawals" fill="#DC2626" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={5}>
+          <Card>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em', mb: 1.5, display: 'block' }}>
+                Member Growth
+              </Typography>
+              {isLoading ? <Skeleton variant="rectangular" height={220} /> : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={memberGrowthData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} width={30} allowDecimals={false} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                    <Line type="monotone" dataKey="New Members" stroke="#0A1628" strokeWidth={2} dot={{ r: 4, fill: '#0A1628' }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Recent transactions + Quick actions */}
+      <Grid container spacing={1.5}>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em', mb: 1, display: 'block' }}>
+                Recent Transactions
+              </Typography>
+              {isLoading ? <Skeleton variant="rectangular" height={200} /> : !data?.recentTransactions.length ? (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>No transactions yet</Typography>
+              ) : (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Member</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Date</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {data.recentTransactions.slice(0, 8).map((txn) => (
+                        <TableRow key={txn.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate('/transactions')}>
+                          <TableCell sx={{ fontWeight: 500, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{txn.memberName}</TableCell>
+                          <TableCell sx={{ textTransform: 'capitalize', fontSize: '0.75rem' }}>{txn.transactionType.replace(/_/g, ' ')}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatINR(txn.amountPaise)}</TableCell>
+                          <TableCell><StatusChip status={txn.status} /></TableCell>
+                          <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, color: 'text.secondary', fontSize: '0.75rem' }}>{formatDate(txn.createdAt)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em', mb: 1.5, display: 'block' }}>
+                Quick Actions
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {actions.map((a) => (
+                  <ButtonBase
+                    key={a.label}
+                    onClick={() => navigate(a.path)}
+                    sx={{
+                      px: 2, py: 1.25, borderRadius: 1,
+                      border: '1px solid', borderColor: 'divider',
+                      bgcolor: 'background.paper',
+                      fontSize: '0.8125rem', fontWeight: 600, color: 'text.primary',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: '100%',
+                      '&:hover': { bgcolor: '#F9FAFB', borderColor: '#C5A572' },
+                    }}
+                  >
+                    {a.label}
+                    <ArrowForwardIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                  </ButtonBase>
+                ))}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
     </Box>
+  );
+}
+
+function StatTile({ label, value, loading, warn, onClick }: { label: string; value: string; loading: boolean; warn?: boolean; onClick: () => void }) {
+  return (
+    <ButtonBase
+      onClick={onClick}
+      sx={{
+        display: 'block', width: '100%', textAlign: 'left',
+        p: 1.5, borderRadius: 1, border: '1px solid', borderColor: 'divider',
+        bgcolor: 'background.paper',
+        '&:hover': { bgcolor: '#F9FAFB' },
+      }}
+    >
+      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
+        {label}
+      </Typography>
+      {loading ? (
+        <Skeleton width={60} height={24} />
+      ) : (
+        <Typography sx={{
+          fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.2,
+          fontVariantNumeric: 'tabular-nums',
+          color: warn ? 'warning.main' : 'text.primary',
+        }}>
+          {value}
+        </Typography>
+      )}
+    </ButtonBase>
   );
 }

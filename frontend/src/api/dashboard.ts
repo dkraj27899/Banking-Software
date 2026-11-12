@@ -16,6 +16,8 @@ export interface DashboardStats {
     accountNumber: string;
     createdAt: string;
   }>;
+  memberGrowth: Array<{ month: string; newMembers: number }>;
+  dailyCashFlow: Array<{ day: string; depositsPaise: number; withdrawalsPaise: number }>;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {

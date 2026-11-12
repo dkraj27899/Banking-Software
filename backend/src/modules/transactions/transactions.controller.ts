@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { query, withTransaction } from '../../config/database.js';
 import { logAudit } from '../../middleware/auditLog.js';
 import { notifyApprovers } from '../notifications/notifications.service.js';
+import { sendDeposit, sendWithdrawal } from '../../services/sms.service.js';
 
 const GL_ACCOUNT_MAP: Record<string, string> = {
   savings: '2100',
@@ -301,6 +302,27 @@ export async function authorizeTransaction(req: Request, res: Response, next: Ne
       ipAddress: String(req.ip ?? 'unknown'),
       branchId: req.user!.branchId,
     });
+
+    if (result.status === 'posted') {
+      const txnInfo = await query<{
+        mobile: string; full_name: string; account_number: string;
+        transaction_type: string; amount_paise: string; balance_after_paise: string;
+      }>(
+        `SELECT m.mobile, m.full_name, a.account_number,
+                t.transaction_type, t.amount_paise, t.balance_after_paise
+         FROM transactions t
+         JOIN accounts a ON t.account_id = a.id
+         JOIN members m ON a.member_id = m.id
+         WHERE t.transaction_number = $1`,
+        [result.transactionNumber],
+      );
+      if (txnInfo.rows[0]) {
+        const ti = txnInfo.rows[0];
+        const isDebit = ['cash_withdrawal', 'loan_repayment', 'fee_charge'].includes(ti.transaction_type);
+        const fn = isDebit ? sendWithdrawal : sendDeposit;
+        fn(ti.mobile, ti.full_name, ti.account_number, Number(ti.amount_paise), Number(ti.balance_after_paise));
+      }
+    }
 
     res.json({ success: true, data: result });
   } catch (err: any) {

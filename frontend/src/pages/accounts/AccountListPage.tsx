@@ -61,7 +61,7 @@ export default function AccountListPage() {
         </Button>
       </Stack>
 
-      <Card sx={{ mb: 2, borderRadius: 2.5 }}>
+      <Card sx={{ mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ p: 2 }}>
           <TextField
             size="small" placeholder={t('common.search') + '...'}
@@ -79,7 +79,7 @@ export default function AccountListPage() {
         </Stack>
       </Card>
 
-      <Card sx={{ borderRadius: 2.5, overflow: 'hidden' }}>
+      <Card sx={{ overflow: 'hidden' }}>
         {isLoading ? <LoadingSpinner /> : accounts.length === 0 ? (
           <EmptyState message={t('common.noData') || 'No accounts found'} />
         ) : (
@@ -87,7 +87,7 @@ export default function AccountListPage() {
             <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small" sx={{ minWidth: isMobile ? 600 : 'auto' }}>
                 <TableHead>
-                  <TableRow sx={{ '& th': { fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' } }}>
+                  <TableRow>
                     <TableCell>Account #</TableCell>
                     <TableCell>{t('common.name') || 'Member'}</TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Product</TableCell>

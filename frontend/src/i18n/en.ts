@@ -142,6 +142,13 @@ const en = {
       appSubmitted: 'Member application submitted',
       approveConfirm: 'Are you sure you want to approve this member?',
       rejectReason: 'Rejection Reason',
+      memberType: 'Membership Type',
+      fatherGuardian: 'Father / Guardian',
+      dob: 'Date of Birth',
+      appliedOn: 'Applied On',
+      approvedOn: 'Approved On',
+      contact: 'Contact',
+      address: 'Address',
     },
 
     // Accounts
@@ -161,6 +168,7 @@ const en = {
       closeAccount: 'Close Account',
       changeProduct: 'Change Account Product',
       closureReason: 'Closure Reason',
+      openAccount: 'Open Account',
     },
 
     // Transactions

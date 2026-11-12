@@ -6,26 +6,14 @@ import {
   Autocomplete, Breadcrumbs, Link, alpha,
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
 import { useSnackbar } from 'notistack';
 import { createAccount, listAccountProducts } from '@/api/accounts';
 import { listMembers, type Member } from '@/api/members';
 
-function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+function SectionHeader({ title }: { title: string }) {
   return (
-    <Box sx={{
-      display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5, mt: 1,
-      pb: 1.5, borderBottom: '1px solid', borderColor: 'divider',
-    }}>
-      <Box sx={{
-        width: 32, height: 32, borderRadius: 1.5,
-        bgcolor: (t) => alpha(t.palette.secondary.main, 0.12),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'secondary.dark', '& .MuiSvgIcon-root': { fontSize: 18 },
-      }}>
-        {icon}
-      </Box>
-      <Typography variant="subtitle2" sx={{ color: 'text.primary', letterSpacing: '0.03em' }}>
+    <Box sx={{ mb: 2.5, mt: 1, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em' }}>
         {title}
       </Typography>
     </Box>
@@ -87,14 +75,35 @@ export default function CreateAccountPage() {
       <Card sx={{ maxWidth: 700, mx: 'auto' }}>
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
-            <SectionHeader icon={<AccountBalanceOutlinedIcon />} title="Account Details" />
+            <SectionHeader title="Account Details" />
             <Grid container spacing={{ xs: 2, sm: 2.5 }} sx={{ mb: 3.5 }}>
               <Grid item xs={12}>
                 <Autocomplete
-                  options={members}
+                  options={[...members].sort((a, b) => (a.accountCount ?? 0) - (b.accountCount ?? 0))}
                   getOptionLabel={(o) => `${o.membershipNumber ?? '?'} — ${o.fullName}`}
                   onInputChange={(_, v) => setMemberSearch(v)}
                   onChange={(_, v) => setMemberId(v?.id ?? '')}
+                  renderOption={(props, o) => {
+                    const count = o.accountCount ?? 0;
+                    return (
+                      <li {...props} key={o.id}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight={600} noWrap>{o.fullName}</Typography>
+                            <Typography variant="caption" color="text.secondary">{o.membershipNumber ?? 'Pending'} · {o.city}</Typography>
+                          </Box>
+                          <Box sx={{
+                            px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700, flexShrink: 0,
+                            ...(count === 0
+                              ? { bgcolor: alpha('#059669', 0.1), color: '#059669' }
+                              : { bgcolor: alpha('#6B7280', 0.1), color: '#6B7280' }),
+                          }}>
+                            {count === 0 ? 'NEW' : `${count} A/C`}
+                          </Box>
+                        </Box>
+                      </li>
+                    );
+                  }}
                   renderInput={(params) => (
                     <TextField {...params} required label="Search Active Member" placeholder="Type name or membership #" />
                   )}
@@ -123,7 +132,8 @@ export default function CreateAccountPage() {
               <Button variant="outlined" onClick={() => navigate('/accounts')} sx={{ minWidth: 120 }}>
                 Cancel
               </Button>
-              <Button variant="contained" type="submit" disabled={mutation.isPending || !memberId || !productId} sx={{ minWidth: 180 }}>
+              <Button variant="contained" type="submit" disabled={mutation.isPending || !memberId || !productId}
+                sx={{ minWidth: 180, color: '#FFFFFF', '&.Mui-disabled': { bgcolor: '#0A1628', color: 'rgba(255,255,255,0.45)' } }}>
                 {mutation.isPending ? 'Opening...' : 'Open Account'}
               </Button>
             </Stack>

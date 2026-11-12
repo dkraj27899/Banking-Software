@@ -48,10 +48,11 @@ export default function PassbookPage() {
     <Box>
       {/* Controls — hidden on print */}
       <Box className="no-print">
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} sx={{ mb: 3 }}>
           <Typography variant="h4" fontWeight={700}>Passbook</Typography>
           {passbook && (
-            <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint}>
+            <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint}
+              sx={{ alignSelf: { xs: 'stretch', sm: 'auto' } }}>
               Print Passbook
             </Button>
           )}
@@ -116,13 +117,14 @@ export default function PassbookPage() {
           {/* Header band */}
           <div className="passbook-header" style={{
             backgroundColor: NAVY,
-            padding: '16px 24px',
+            padding: '16px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: 12,
           }}>
-            <div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: 0.5, color: '#ffffff' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 'clamp(0.95rem, 3.5vw, 1.3rem)', fontWeight: 800, letterSpacing: 0.5, color: '#ffffff' }}>
                 Bhagwati Credit Co-operative Society Ltd.
               </div>
               <div className="passbook-header-sub" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>
@@ -153,10 +155,10 @@ export default function PassbookPage() {
           </div>
 
           {/* Account details */}
-          <div style={{ padding: '16px 24px' }}>
+          <div style={{ padding: '16px 16px' }}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: 16,
               paddingBottom: 16,
               borderBottom: '1px solid #e0e0e0',
@@ -186,8 +188,10 @@ export default function PassbookPage() {
             {/* Balance summary */}
             <div className="passbook-balance-box" style={{
               display: 'flex',
+              flexWrap: 'wrap',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: 12,
               marginTop: 16,
               marginBottom: 16,
               padding: '12px 16px',
@@ -305,8 +309,9 @@ export default function PassbookPage() {
             {passbook.entries.length > 0 && (
               <div style={{
                 display: 'flex',
+                flexWrap: 'wrap',
                 justifyContent: 'flex-end',
-                gap: 32,
+                gap: 24,
                 marginTop: 16,
                 paddingTop: 16,
                 borderTop: `2px solid ${NAVY}`,
@@ -336,8 +341,10 @@ export default function PassbookPage() {
               paddingTop: 16,
               borderTop: '1px solid #e0e0e0',
               display: 'flex',
+              flexWrap: 'wrap',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: 8,
             }}>
               <span style={{ fontSize: '0.7rem', color: '#888' }}>
                 This is a computer-generated statement and does not require a signature.

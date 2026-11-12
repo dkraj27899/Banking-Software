@@ -81,7 +81,7 @@ export default function TransactionListPage() {
         </Button>
       </Stack>
 
-      <Card sx={{ mb: 2, borderRadius: 2.5 }}>
+      <Card sx={{ mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ p: 2 }}>
           <TextField
             size="small" placeholder={t('common.search') + '...'}
@@ -102,7 +102,7 @@ export default function TransactionListPage() {
         </Stack>
       </Card>
 
-      <Card sx={{ borderRadius: 2.5, overflow: 'hidden' }}>
+      <Card sx={{ overflow: 'hidden' }}>
         {isLoading ? <LoadingSpinner /> : transactions.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
@@ -110,7 +110,7 @@ export default function TransactionListPage() {
             <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small" sx={{ minWidth: isMobile ? 700 : 'auto' }}>
                 <TableHead>
-                  <TableRow sx={{ '& th': { fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' } }}>
+                  <TableRow>
                     <TableCell>{t('transactions.transactionNumber')}</TableCell>
                     <TableCell>{t('accounts.title')}</TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('common.name')}</TableCell>
