@@ -27,6 +27,9 @@ import notificationRoutes from './modules/notifications/notifications.routes.js'
 
 const app = express();
 
+// Trust the reverse proxy (Nginx) so X-Forwarded-For works for rate limiting and req.ip
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 
