@@ -8,7 +8,7 @@ import { changePasswordApi } from '@/api/auth';
 import { useSnackbar } from 'notistack';
 
 export default function ChangePasswordPage() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [currentPassword, setCurrentPassword] = useState('');
@@ -16,8 +16,6 @@ export default function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const isGoogle = user?.authProvider === 'google';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,14 +29,14 @@ export default function ChangePasswordPage() {
       setError('Passwords do not match');
       return;
     }
-    if (!isGoogle && !currentPassword) {
+    if (!currentPassword) {
       setError('Current password is required');
       return;
     }
 
     setLoading(true);
     try {
-      await changePasswordApi(isGoogle ? '__google__' : currentPassword, newPassword);
+      await changePasswordApi(currentPassword, newPassword);
       enqueueSnackbar('Password changed. Please log in again.', { variant: 'success' });
       await logout();
       navigate('/login', { replace: true });
@@ -55,26 +53,18 @@ export default function ChangePasswordPage() {
 
       <Card sx={{ maxWidth: 440 }}>
         <CardContent sx={{ p: 3 }}>
-          {isGoogle && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              You signed in with Google. Set a password here to also use username/password login.
-            </Alert>
-          )}
-
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
           <form onSubmit={handleSubmit}>
             <Stack spacing={2.5}>
-              {!isGoogle && (
-                <TextField
-                  label="Current Password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={e => setCurrentPassword(e.target.value)}
-                  fullWidth
-                  required
-                />
-              )}
+              <TextField
+                label="Current Password"
+                type="password"
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                fullWidth
+                required
+              />
               <TextField
                 label="New Password"
                 type="password"

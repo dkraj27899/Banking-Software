@@ -7,8 +7,8 @@ interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  googleLogin: (credential: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<AuthUser>;
+  googleLogin: (credential: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
 }
 
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAuthenticated = user !== null && !!localStorage.getItem(TOKEN_KEY);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string): Promise<AuthUser> => {
     setIsLoading(true);
     try {
       const result = await loginApi(username, password);
@@ -36,12 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(REFRESH_KEY, result.refreshToken);
       localStorage.setItem('bccs_user', JSON.stringify(result.user));
       setUser(result.user);
+      return result.user;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const gLogin = useCallback(async (credential: string) => {
+  const gLogin = useCallback(async (credential: string): Promise<AuthUser> => {
     setIsLoading(true);
     try {
       const result = await googleLoginApi(credential);
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(REFRESH_KEY, result.refreshToken);
       localStorage.setItem('bccs_user', JSON.stringify(result.user));
       setUser(result.user);
+      return result.user;
     } finally {
       setIsLoading(false);
     }

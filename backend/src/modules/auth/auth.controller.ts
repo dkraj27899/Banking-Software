@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth as getFirebaseAuth } from 'firebase-admin/auth';
 import { query } from '../../config/database.js';
-import { redis } from '../../config/redis.js';
+import { redis, scanKeys } from '../../config/redis.js';
 import { env } from '../../config/env.js';
 
 if (!getApps().length) {
@@ -279,7 +279,7 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
       logger.warn('Refresh token reuse detected — revoking all sessions for user', {
         userId: payload.userId,
       });
-      const keys = await redis.keys(`${REFRESH_TOKEN_PREFIX}${payload.userId}:*`);
+      const keys = await scanKeys(`${REFRESH_TOKEN_PREFIX}${payload.userId}:*`);
       if (keys.length > 0) await redis.del(...keys);
 
       res.status(401).json({
@@ -365,7 +365,7 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
       return;
     }
 
-    const keys = await redis.keys(`${REFRESH_TOKEN_PREFIX}${req.user.id}:*`);
+    const keys = await scanKeys(`${REFRESH_TOKEN_PREFIX}${req.user.id}:*`);
     if (keys.length > 0) await redis.del(...keys);
 
     logAudit({
@@ -413,16 +413,13 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
       return;
     }
 
-    // Google users pass '__google__' as currentPassword — skip verification
-    if (currentPassword !== '__google__') {
-      const valid = await verifyPassword(currentPassword, staff.password_hash);
-      if (!valid) {
-        res.status(400).json({
-          success: false,
-          error: { code: 'INVALID_PASSWORD', message: 'Current password is incorrect' },
-        });
-        return;
-      }
+    const valid = await verifyPassword(currentPassword, staff.password_hash);
+    if (!valid) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PASSWORD', message: 'Current password is incorrect' },
+      });
+      return;
     }
 
     const newHash = await hashPassword(newPassword);
@@ -433,7 +430,7 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
     );
 
     // Revoke all existing sessions so user re-authenticates with new password
-    const keys = await redis.keys(`${REFRESH_TOKEN_PREFIX}${req.user.id}:*`);
+    const keys = await scanKeys(`${REFRESH_TOKEN_PREFIX}${req.user.id}:*`);
     if (keys.length > 0) await redis.del(...keys);
 
     logAudit({

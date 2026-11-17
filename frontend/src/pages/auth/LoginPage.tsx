@@ -42,8 +42,8 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setError('');
     try {
-      await login(data.username, data.password);
-      navigate(from, { replace: true });
+      const user = await login(data.username, data.password);
+      navigate(user.mustSetupPassword ? '/setup-profile' : from, { replace: true });
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message ?? t('auth.invalidCredentials');
       setError(msg);
@@ -56,8 +56,8 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-      await googleLogin(idToken);
-      navigate(from, { replace: true });
+      const user = await googleLogin(idToken);
+      navigate(user.mustSetupPassword ? '/setup-profile' : from, { replace: true });
     } catch (err: any) {
       console.error('Google login error:', err);
       if (err?.code === 'auth/popup-closed-by-user') return;

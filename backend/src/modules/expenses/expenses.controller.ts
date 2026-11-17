@@ -251,22 +251,27 @@ export async function payExpense(req: Request, res: Response, next: NextFunction
 
     // Get current accounting period
     const periodResult = await client.query<{ id: string }>(
-      `SELECT id FROM accounting_periods WHERE status = 'open' AND start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE LIMIT 1`,
+      `SELECT id FROM accounting_periods WHERE is_closed = false AND start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE LIMIT 1`,
     );
+    if (periodResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      res.status(400).json({ success: false, error: { code: 'NO_PERIOD', message: 'No open accounting period for today' } });
+      return;
+    }
 
     // Create journal entry: Debit Expense GL, Credit Cash GL
     const jeNumber = `JE-${Date.now()}`;
     const jeResult = await client.query<{ id: string }>(
-      `INSERT INTO journal_entries (entry_number, period_id, entry_date, description, source_type, source_id, created_by, status, posted_at)
-       VALUES ($1, $2, CURRENT_DATE, $3, 'expense', $4, $5, 'posted', NOW()) RETURNING id`,
-      [jeNumber, periodResult.rows[0]?.id ?? null, `Expense payment: ${expense.expense_number} - ${expense.description}`, expense.id, req.user!.id],
+      `INSERT INTO journal_entries (entry_number, period_id, entry_date, description, reference_type, reference_id, posted_by)
+       VALUES ($1, $2, CURRENT_DATE, $3, 'expense', $4, $5) RETURNING id`,
+      [jeNumber, periodResult.rows[0]!.id, `Expense payment: ${expense.expense_number} - ${expense.description}`, expense.id, req.user!.id],
     );
     const jeId = jeResult.rows[0]!.id;
 
     // Debit: expense account
     if (glAccountId) {
       await client.query(
-        `INSERT INTO journal_entry_lines (entry_id, account_id, debit_paise, credit_paise, description) VALUES ($1, $2, $3, 0, $4)`,
+        `INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_paise, credit_paise, description) VALUES ($1, $2, $3, 0, $4)`,
         [jeId, glAccountId, expense.amount_paise, expense.description],
       );
     }
@@ -277,7 +282,7 @@ export async function payExpense(req: Request, res: Response, next: NextFunction
     );
     if (cashResult.rows.length > 0) {
       await client.query(
-        `INSERT INTO journal_entry_lines (entry_id, account_id, debit_paise, credit_paise, description) VALUES ($1, $2, 0, $3, $4)`,
+        `INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_paise, credit_paise, description) VALUES ($1, $2, 0, $3, $4)`,
         [jeId, cashResult.rows[0]!.id, expense.amount_paise, `Cash paid: ${expense.expense_number}`],
       );
     }

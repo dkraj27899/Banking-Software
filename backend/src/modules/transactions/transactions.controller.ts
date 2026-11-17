@@ -53,6 +53,7 @@ async function getOrCreatePeriod(client: import('pg').PoolClient, date: Date): P
 async function generateTxnNumber(client: import('pg').PoolClient): Promise<string> {
   const now = new Date();
   const prefix = `TXN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext('txn_seq'))` );
   const r = await client.query<{ count: string }>(
     `SELECT COUNT(*) AS count FROM transactions WHERE transaction_number LIKE $1`,
     [`${prefix}%`],
@@ -64,6 +65,7 @@ async function generateTxnNumber(client: import('pg').PoolClient): Promise<strin
 async function generateJournalNumber(client: import('pg').PoolClient): Promise<string> {
   const now = new Date();
   const prefix = `JE${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext('je_seq'))`);
   const r = await client.query<{ count: string }>(
     `SELECT COUNT(*) AS count FROM journal_entries WHERE entry_number LIKE $1`,
     [`${prefix}%`],
@@ -80,34 +82,26 @@ export async function createTransaction(req: Request, res: Response, next: NextF
       idempotencyKey: string;
     };
 
-    const existing = await query<{ id: string; status: string }>(
-      `SELECT id, status FROM transactions WHERE idempotency_key = $1`,
-      [body.idempotencyKey],
-    );
-    if (existing.rows.length > 0) {
-      res.status(200).json({
-        success: true,
-        data: { id: existing.rows[0]!.id, status: existing.rows[0]!.status, message: 'Transaction already exists (idempotent)' },
-      });
-      return;
-    }
-
-    const acctCheck = await query<{ status: string; account_type: string }>(
-      `SELECT a.status, p.account_type FROM accounts a JOIN account_products p ON a.product_id = p.id WHERE a.id = $1`,
-      [body.accountId],
-    );
-    if (acctCheck.rows.length === 0) {
-      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Account not found' } });
-      return;
-    }
-    if (acctCheck.rows[0]!.status !== 'active') {
-      res.status(400).json({ success: false, error: { code: 'ACCOUNT_NOT_ACTIVE', message: 'Account is not active' } });
-      return;
-    }
-
-    const initialStatus = 'pending';
-
     const txnNumber = await withTransaction(async (client) => {
+      const existing = await client.query<{ id: string; status: string }>(
+        `SELECT id, status FROM transactions WHERE idempotency_key = $1`,
+        [body.idempotencyKey],
+      );
+      if (existing.rows.length > 0) {
+        return { idempotent: true as const, id: existing.rows[0]!.id, status: existing.rows[0]!.status };
+      }
+
+      const acctCheck = await client.query<{ status: string; account_type: string }>(
+        `SELECT a.status, p.account_type FROM accounts a JOIN account_products p ON a.product_id = p.id WHERE a.id = $1`,
+        [body.accountId],
+      );
+      if (acctCheck.rows.length === 0) {
+        throw Object.assign(new Error('Account not found'), { statusCode: 404, code: 'NOT_FOUND' });
+      }
+      if (acctCheck.rows[0]!.status !== 'active') {
+        throw Object.assign(new Error('Account is not active'), { statusCode: 400, code: 'ACCOUNT_NOT_ACTIVE' });
+      }
+
       const num = await generateTxnNumber(client);
 
       await client.query(
@@ -119,19 +113,29 @@ export async function createTransaction(req: Request, res: Response, next: NextF
         [
           num, body.accountId, body.transactionType, body.amountPaise,
           body.paymentMethod, body.referenceNumber ?? null, body.description ?? null,
-          body.idempotencyKey, initialStatus, req.user!.id, req.user!.branchId,
+          body.idempotencyKey, 'pending', req.user!.id, req.user!.branchId,
         ],
       );
 
-      return num;
+      return { idempotent: false as const, num };
     });
+
+    if (txnNumber.idempotent) {
+      res.status(200).json({
+        success: true,
+        data: { id: txnNumber.id, status: txnNumber.status, message: 'Transaction already exists (idempotent)' },
+      });
+      return;
+    }
+
+    const num = txnNumber.num;
 
     logAudit({
       actorId: req.user!.id,
       actorName: req.user!.fullName,
       action: 'TRANSACTION_CREATE',
       entityType: 'transactions',
-      entityId: txnNumber,
+      entityId: num,
       details: {
         accountId: body.accountId,
         type: body.transactionType,
@@ -145,14 +149,14 @@ export async function createTransaction(req: Request, res: Response, next: NextF
     notifyApprovers(
       req.user!.id,
       'New Transaction — Approval Required',
-      `${req.user!.fullName} created ${body.transactionType.replace(/_/g, ' ')} of ${amountRupees} (${txnNumber}). Needs your approval.`,
+      `${req.user!.fullName} created ${body.transactionType.replace(/_/g, ' ')} of ${amountRupees} (${num}). Needs your approval.`,
       '/transactions',
     );
 
     res.status(201).json({
       success: true,
       data: {
-        transactionNumber: txnNumber,
+        transactionNumber: num,
         status: 'pending',
         message: 'Transaction created — pending authorization',
       },

@@ -351,6 +351,7 @@ export async function approveMember(req: Request, res: Response, next: NextFunct
       const year = new Date().getFullYear();
       const pattern = `${prefix}-${year}-%`;
 
+      await client.query(`SELECT pg_advisory_xact_lock(hashtext('member_seq'))`);
       const countResult = await client.query<{ count: string }>(
         `SELECT COUNT(*) AS count FROM members WHERE membership_number LIKE $1`,
         [pattern],

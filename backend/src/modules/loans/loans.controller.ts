@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { query, getClient } from '../../config/database.js';
+import { query, getClient, withTransaction } from '../../config/database.js';
 import { logAudit } from '../../middleware/auditLog.js';
 
 interface ScheduleEntry {
@@ -101,16 +101,29 @@ function calculateTotalInterest(principalPaise: number, interestRateBps: number,
   return emi * tenureMonths - principalPaise;
 }
 
-async function nextSeq(prefix: string, table: string, column: string): Promise<string> {
+async function nextSeq(client: import('pg').PoolClient, prefix: string, table: 'loan_applications' | 'loans'): Promise<string> {
   const today = new Date();
   const ymd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
   const pattern = `${prefix}-${ymd}-%`;
-  const result = await query<{ count: string }>(
-    `SELECT COUNT(*) AS count FROM ${table} WHERE ${column} LIKE $1`,
-    [pattern],
-  );
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`${table}_seq`]);
+  const sql = table === 'loan_applications'
+    ? `SELECT COUNT(*) AS count FROM loan_applications WHERE application_number LIKE $1`
+    : `SELECT COUNT(*) AS count FROM loans WHERE loan_number LIKE $1`;
+  const result = await client.query<{ count: string }>(sql, [pattern]);
   const seq = parseInt(result.rows[0]!.count, 10) + 1;
   return `${prefix}-${ymd}-${String(seq).padStart(4, '0')}`;
+}
+
+async function generateTxnNumber(client: import('pg').PoolClient): Promise<string> {
+  const now = new Date();
+  const prefix = `TXN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, ['txn_seq']);
+  const r = await client.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM transactions WHERE transaction_number LIKE $1`,
+    [`${prefix}%`],
+  );
+  const seq = parseInt(r.rows[0]!.count, 10) + 1;
+  return `${prefix}${String(seq).padStart(6, '0')}`;
 }
 
 // === Loan Products ===
@@ -184,26 +197,28 @@ export async function createApplication(req: Request, res: Response, next: NextF
       return;
     }
 
-    const applicationNumber = await nextSeq('LA', 'loan_applications', 'application_number');
-
-    const result = await query<{ id: string }>(
-      `INSERT INTO loan_applications (application_number, member_id, account_id, product_id, requested_amount_paise, tenure_months, purpose, guarantor_name, guarantor_member_id, collateral_description, applied_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-      [applicationNumber, memberId, accountId, productId, requestedAmountPaise, tenureMonths, purpose ?? null, guarantorName ?? null, guarantorMemberId ?? null, collateralDescription ?? null, req.user!.id],
-    );
+    const result = await withTransaction(async (client) => {
+      const applicationNumber = await nextSeq(client, 'LA', 'loan_applications');
+      const r = await client.query<{ id: string }>(
+        `INSERT INTO loan_applications (application_number, member_id, account_id, product_id, requested_amount_paise, tenure_months, purpose, guarantor_name, guarantor_member_id, collateral_description, applied_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+        [applicationNumber, memberId, accountId, productId, requestedAmountPaise, tenureMonths, purpose ?? null, guarantorName ?? null, guarantorMemberId ?? null, collateralDescription ?? null, req.user!.id],
+      );
+      return { id: r.rows[0]!.id, applicationNumber };
+    });
 
     logAudit({
       actorId: req.user!.id,
       actorName: req.user!.fullName,
       action: 'LOAN_APPLICATION_CREATE',
       entityType: 'loan_applications',
-      entityId: result.rows[0]!.id,
-      details: { applicationNumber, memberId, productId, requestedAmountPaise, tenureMonths },
+      entityId: result.id,
+      details: { applicationNumber: result.applicationNumber, memberId, productId, requestedAmountPaise, tenureMonths },
       ipAddress: String(req.ip ?? 'unknown'),
       branchId: req.user!.branchId,
     });
 
-    res.status(201).json({ success: true, data: { id: result.rows[0]!.id, applicationNumber } });
+    res.status(201).json({ success: true, data: { id: result.id, applicationNumber: result.applicationNumber } });
   } catch (err) {
     next(err);
   }
@@ -397,7 +412,7 @@ export async function disburseLoan(req: Request, res: Response, next: NextFuncti
     const emiPaise = calculateEmi(principalPaise, product.interest_rate_bps, app.tenure_months, product.interest_type);
     const totalInterestPaise = calculateTotalInterest(principalPaise, product.interest_rate_bps, app.tenure_months, product.interest_type);
 
-    const loanNumber = await nextSeq('LN', 'loans', 'loan_number');
+    const loanNumber = await nextSeq(client, 'LN', 'loans');
     const disbursedAt = new Date();
 
     const loanResult = await client.query<{ id: string }>(
@@ -417,7 +432,7 @@ export async function disburseLoan(req: Request, res: Response, next: NextFuncti
     }
 
     // Create disbursement transaction on the member's account
-    const txnNumber = `TXN-${Date.now()}`;
+    const txnNumber = await generateTxnNumber(client);
     await client.query(
       `INSERT INTO transactions (transaction_number, account_id, transaction_type, amount_paise, balance_after_paise, payment_method, description, status, entered_by, authorized_by, authorized_at, posted_at, branch_id)
        VALUES ($1, $2, 'loan_disbursement', $3, (SELECT balance_paise FROM accounts WHERE id = $2) + $3, 'internal', $4, 'posted', $5, $5, NOW(), NOW(), $6)`,
@@ -595,6 +610,17 @@ export async function recordRepayment(req: Request, res: Response, next: NextFun
     const sched = scheduleResult.rows[0]!;
     const remaining = Number(sched.total_paise) - Number(sched.paid_paise);
 
+    const balanceResult = await client.query<{ balance_paise: string }>(
+      `SELECT balance_paise FROM accounts WHERE id = $1 FOR UPDATE`, [loan.account_id],
+    );
+    const accountBalance = Number(balanceResult.rows[0]!.balance_paise);
+    const payTowardCandidate = Math.min(amountPaise, remaining);
+    if (accountBalance < payTowardCandidate) {
+      await client.query('ROLLBACK');
+      res.status(400).json({ success: false, error: { code: 'INSUFFICIENT_BALANCE', message: 'Account has insufficient balance for this repayment' } });
+      return;
+    }
+
     // Allocate: interest first, then principal
     const interestDue = Number(sched.interest_paise);
     const principalDue = Number(sched.principal_paise);
@@ -614,7 +640,7 @@ export async function recordRepayment(req: Request, res: Response, next: NextFun
     );
 
     // Create loan repayment record
-    const txnNumber = `TXN-${Date.now()}`;
+    const txnNumber = await generateTxnNumber(client);
     const txnResult = await client.query<{ id: string }>(
       `INSERT INTO transactions (transaction_number, account_id, transaction_type, amount_paise, balance_after_paise, payment_method, description, status, entered_by, authorized_by, authorized_at, posted_at, branch_id)
        VALUES ($1, $2, 'loan_repayment', $3, (SELECT balance_paise FROM accounts WHERE id = $2) - $3, 'cash', $4, 'posted', $5, $5, NOW(), NOW(), $6) RETURNING id`,

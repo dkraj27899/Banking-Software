@@ -18,3 +18,14 @@ redis.on('error', (err: Error) => {
 redis.on('connect', () => {
   logger.info('Redis connected');
 });
+
+export async function scanKeys(pattern: string): Promise<string[]> {
+  const found: string[] = [];
+  let cursor = '0';
+  do {
+    const [next, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    cursor = next;
+    found.push(...keys);
+  } while (cursor !== '0');
+  return found;
+}

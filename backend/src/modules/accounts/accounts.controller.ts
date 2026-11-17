@@ -316,6 +316,7 @@ export async function approveAccount(req: Request, res: Response, next: NextFunc
         ? String(typeof configResult.rows[0].value === 'string' ? configResult.rows[0].value : JSON.parse(String(configResult.rows[0].value)))
         : 'BCCS';
 
+      await client.query(`SELECT pg_advisory_xact_lock(hashtext('acct_seq'))`);
       const countResult = await client.query<{ count: string }>(
         `SELECT COUNT(*) AS count FROM accounts WHERE account_number IS NOT NULL`,
       );

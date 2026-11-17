@@ -298,8 +298,12 @@ export async function getTrialBalance(req: Request, res: Response, next: NextFun
         COALESCE(SUM(jel.debit_paise), 0) AS total_debit,
         COALESCE(SUM(jel.credit_paise), 0) AS total_credit
        FROM chart_of_accounts coa
-       LEFT JOIN journal_entry_lines jel ON jel.account_id = coa.id
-       LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id AND je.entry_date <= $1::date
+       LEFT JOIN (
+         SELECT jel2.account_id, jel2.debit_paise, jel2.credit_paise
+         FROM journal_entry_lines jel2
+         JOIN journal_entries je ON jel2.journal_entry_id = je.id
+         WHERE je.entry_date <= $1::date
+       ) jel ON jel.account_id = coa.id
        WHERE coa.is_active = true AND coa.is_header = false
        GROUP BY coa.code, coa.name, coa.account_type, coa.normal_balance, coa.is_header
        ORDER BY coa.code`,
