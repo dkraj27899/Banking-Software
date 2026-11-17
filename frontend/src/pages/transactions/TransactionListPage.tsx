@@ -18,7 +18,8 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import EmptyState from '@/components/common/EmptyState';
 import CopyableId from '@/components/common/CopyableId';
 import { useSnackbar } from 'notistack';
-import { TRANSACTION_TYPE } from '@bccs/shared';
+import { TRANSACTION_TYPE, PERMISSIONS } from '@bccs/shared';
+import { usePermission } from '@/hooks/usePermission';
 
 const statuses = ['', 'pending', 'authorized', 'posted', 'reversed', 'failed'];
 const txnTypes = ['', ...Object.values(TRANSACTION_TYPE)];
@@ -35,6 +36,7 @@ export default function TransactionListPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [txnType, setTxnType] = useState('');
+  const canAuthorize = usePermission(PERMISSIONS.TRANSACTION_AUTHORIZE);
 
   const { data, isLoading } = useQuery({
     queryKey: ['transactions', page, pageSize, search, status, txnType],
@@ -136,7 +138,7 @@ export default function TransactionListPage() {
                       <TableCell><StatusChip status={txn.status} /></TableCell>
                       <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, color: 'text.secondary', fontSize: '0.8rem' }}>{formatDate(txn.createdAt)}</TableCell>
                       <TableCell align="center">
-                        {txn.status === 'pending' && (
+                        {txn.status === 'pending' && canAuthorize && (
                           <Tooltip title="Authorize">
                             <IconButton size="small" color="success" onClick={() => authorizeMut.mutate(txn.id)}>
                               <CheckCircleOutlineIcon fontSize="small" />
