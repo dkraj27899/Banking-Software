@@ -29,6 +29,9 @@ import CreateStaffPage from '@/pages/staff/CreateStaffPage';
 import AuditLogPage from '@/pages/audit/AuditLogPage';
 import SettingsPage from '@/pages/settings/SettingsPage';
 import ReportsPage from '@/pages/reports/ReportsPage';
+import ProfilePage from '@/pages/profile/ProfilePage';
+import ChangePasswordPage from '@/pages/profile/ChangePasswordPage';
+import SetupProfilePage from '@/pages/profile/SetupProfilePage';
 import { PERMISSIONS } from '@bccs/shared';
 
 const queryClient = new QueryClient({
@@ -56,6 +59,9 @@ export default function App() {
               <Routes>
                 {/* Public */}
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/setup-profile" element={
+                  <ProtectedRoute><SetupProfilePage /></ProtectedRoute>
+                } />
 
                 {/* Protected */}
                 <Route
@@ -142,6 +148,10 @@ export default function App() {
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* Profile */}
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="change-password" element={<ChangePasswordPage />} />
 
                   <Route path="unauthorized" element={<UnauthorizedPage />} />
                 </Route>

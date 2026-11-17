@@ -30,6 +30,8 @@ const envSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_PHONE_NUMBER: z.string().optional(),
   SMS_ENABLED: z.enum(['true', 'false']).default('false'),
+
+  FIREBASE_PROJECT_ID: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

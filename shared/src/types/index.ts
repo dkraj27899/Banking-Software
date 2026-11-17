@@ -33,10 +33,13 @@ export interface AuthUser {
   id: string;
   username: string;
   fullName: string;
+  email: string;
   role: RoleCode;
   permissions: PermissionCode[];
   branchId: string;
   branchName: string;
+  authProvider?: 'local' | 'google';
+  mustSetupPassword?: boolean;
 }
 
 export interface RefreshTokenRequest {

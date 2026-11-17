@@ -1,7 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth as getFirebaseAuth } from 'firebase-admin/auth';
 import { query } from '../../config/database.js';
 import { redis } from '../../config/redis.js';
+import { env } from '../../config/env.js';
+
+if (!getApps().length) {
+  initializeApp({ projectId: env.FIREBASE_PROJECT_ID });
+}
 import { hashPassword, verifyPassword } from '../../utils/password.js';
 import {
   generateAccessToken,
@@ -20,11 +27,13 @@ interface StaffRow {
   id: string;
   username: string;
   full_name: string;
+  email: string;
   password_hash: string;
   role: RoleCode;
   branch_id: string;
   branch_name: string;
   is_active: boolean;
+  must_change_password: boolean;
 }
 
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,7 +41,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const { username, password } = req.body as { username: string; password: string };
 
     const result = await query<StaffRow>(
-      `SELECT s.id, s.username, s.full_name, s.password_hash, s.role, s.branch_id, b.name AS branch_name, s.is_active
+      `SELECT s.id, s.username, s.full_name, s.email, s.password_hash, s.role, s.branch_id, b.name AS branch_name, s.is_active, s.must_change_password
        FROM staff_users s
        JOIN branches b ON s.branch_id = b.id
        WHERE s.username = $1`,
@@ -114,10 +123,130 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
           id: staff.id,
           username: staff.username,
           fullName: staff.full_name,
+          email: staff.email,
           role: staff.role,
           permissions: [...permissions],
           branchId: staff.branch_id,
           branchName: staff.branch_name,
+          authProvider: 'local' as const,
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function googleLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { idToken } = req.body as { idToken: string };
+    if (!idToken) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'MISSING_TOKEN', message: 'Firebase ID token is required' },
+      });
+      return;
+    }
+
+    let decoded;
+    try {
+      decoded = await getFirebaseAuth().verifyIdToken(idToken);
+    } catch (verifyErr: any) {
+      logger.error('Firebase verifyIdToken failed', { code: verifyErr?.code, message: verifyErr?.message });
+      res.status(401).json({
+        success: false,
+        error: { code: 'INVALID_TOKEN', message: verifyErr?.message || 'Invalid Firebase token' },
+      });
+      return;
+    }
+
+    const email = decoded.email;
+    if (!email) {
+      res.status(401).json({
+        success: false,
+        error: { code: 'NO_EMAIL', message: 'Google account has no email' },
+      });
+      return;
+    }
+
+    const result = await query<StaffRow>(
+      `SELECT s.id, s.username, s.full_name, s.email, s.password_hash, s.role, s.branch_id, b.name AS branch_name, s.is_active, s.must_change_password
+       FROM staff_users s
+       JOIN branches b ON s.branch_id = b.id
+       WHERE LOWER(s.email) = LOWER($1)`,
+      [email],
+    );
+
+    const staff = result.rows[0];
+    if (!staff) {
+      res.status(401).json({
+        success: false,
+        error: { code: 'NO_ACCOUNT', message: `No staff account linked to ${email}` },
+      });
+      return;
+    }
+
+    if (!staff.is_active) {
+      res.status(403).json({
+        success: false,
+        error: { code: 'ACCOUNT_DISABLED', message: 'Account is deactivated. Contact your administrator.' },
+      });
+      return;
+    }
+
+    const permissions = ROLE_PERMISSIONS[staff.role] ?? [];
+    const tokenFamily = uuidv4();
+
+    const accessToken = generateAccessToken({
+      userId: staff.id,
+      username: staff.username,
+      fullName: staff.full_name,
+      role: staff.role,
+      branchId: staff.branch_id,
+      branchName: staff.branch_name,
+      permissions: [...permissions],
+    });
+    const refreshToken = generateRefreshToken({
+      userId: staff.id,
+      tokenFamily,
+    });
+
+    await redis.set(
+      `${REFRESH_TOKEN_PREFIX}${staff.id}:${tokenFamily}`,
+      '1',
+      'EX',
+      REFRESH_TOKEN_TTL,
+    );
+
+    await query(`UPDATE staff_users SET last_login_at = NOW() WHERE id = $1`, [staff.id]);
+
+    logAudit({
+      actorId: staff.id,
+      actorName: staff.full_name,
+      action: 'AUTH_LOGIN',
+      entityType: 'staff_users',
+      entityId: staff.id,
+      ipAddress: String(req.ip ?? 'unknown'),
+      branchId: staff.branch_id,
+      details: { method: 'google', googleEmail: email },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          id: staff.id,
+          username: staff.username,
+          fullName: staff.full_name,
+          email: staff.email,
+          role: staff.role,
+          permissions: [...permissions],
+          branchId: staff.branch_id,
+          branchName: staff.branch_name,
+          authProvider: 'google' as const,
+          mustSetupPassword: staff.must_change_password,
         },
       },
     });
@@ -161,7 +290,7 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
     await redis.del(redisKey);
 
     const staffResult = await query<StaffRow>(
-      `SELECT s.id, s.username, s.full_name, s.role, s.branch_id, b.name AS branch_name, s.is_active
+      `SELECT s.id, s.username, s.full_name, s.email, s.role, s.branch_id, b.name AS branch_name, s.is_active, s.must_change_password
        FROM staff_users s
        JOIN branches b ON s.branch_id = b.id
        WHERE s.id = $1`,
@@ -210,6 +339,7 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
           id: staff.id,
           username: staff.username,
           fullName: staff.full_name,
+          email: staff.email,
           role: staff.role,
           permissions: [...permissions],
           branchId: staff.branch_id,
@@ -280,13 +410,16 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const valid = await verifyPassword(currentPassword, staff.password_hash);
-    if (!valid) {
-      res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_PASSWORD', message: 'Current password is incorrect' },
-      });
-      return;
+    // Google users pass '__google__' as currentPassword — skip verification
+    if (currentPassword !== '__google__') {
+      const valid = await verifyPassword(currentPassword, staff.password_hash);
+      if (!valid) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_PASSWORD', message: 'Current password is incorrect' },
+        });
+        return;
+      }
     }
 
     const newHash = await hashPassword(newPassword);
@@ -311,6 +444,47 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
     });
 
     res.json({ success: true, data: { message: 'Password changed. Please log in again.' } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function setupProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+      return;
+    }
+
+    const { fullName, password } = req.body as { fullName: string; password: string };
+
+    if (!fullName || fullName.trim().length < 2) {
+      res.status(400).json({ success: false, error: { code: 'INVALID_NAME', message: 'Full name is required (min 2 chars)' } });
+      return;
+    }
+    if (!password || password.length < 8) {
+      res.status(400).json({ success: false, error: { code: 'WEAK_PASSWORD', message: 'Password must be at least 8 characters' } });
+      return;
+    }
+
+    const newHash = await hashPassword(password);
+
+    await query(
+      `UPDATE staff_users SET full_name = $1, password_hash = $2, must_change_password = false, updated_at = NOW() WHERE id = $3`,
+      [fullName.trim(), newHash, req.user.id],
+    );
+
+    logAudit({
+      actorId: req.user.id,
+      actorName: fullName.trim(),
+      action: 'AUTH_PROFILE_SETUP',
+      entityType: 'staff_users',
+      entityId: req.user.id,
+      ipAddress: String(req.ip ?? 'unknown'),
+      branchId: req.user.branchId,
+    });
+
+    res.json({ success: true, data: { message: 'Profile setup complete' } });
   } catch (err) {
     next(err);
   }

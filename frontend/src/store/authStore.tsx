@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { loginApi, logoutApi } from '@/api/auth';
+import { loginApi, googleLoginApi, logoutApi } from '@/api/auth';
 import { TOKEN_KEY, REFRESH_KEY } from '@/api/client';
 import type { AuthUser } from '@bccs/shared';
 
@@ -8,6 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -40,6 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const gLogin = useCallback(async (credential: string) => {
+    setIsLoading(true);
+    try {
+      const result = await googleLoginApi(credential);
+      localStorage.setItem(TOKEN_KEY, result.accessToken);
+      localStorage.setItem(REFRESH_KEY, result.refreshToken);
+      localStorage.setItem('bccs_user', JSON.stringify(result.user));
+      setUser(result.user);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await logoutApi();
@@ -58,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, googleLogin: gLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

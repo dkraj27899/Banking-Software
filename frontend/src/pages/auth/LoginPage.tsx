@@ -5,12 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, TextField, Button, Typography,
-  InputAdornment, IconButton, Alert, CircularProgress,
+  InputAdornment, IconButton, Alert, CircularProgress, Divider,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import GoogleIcon from '@mui/icons-material/Google';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '@/config/firebase';
 import { loginSchema } from '@bccs/shared';
 import { useAuth } from '@/store/authStore';
 import LanguageToggle from '@/components/common/LanguageToggle';
@@ -22,9 +25,10 @@ export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/';
 
@@ -43,6 +47,24 @@ export default function LoginPage() {
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message ?? t('auth.invalidCredentials');
       setError(msg);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      await googleLogin(idToken);
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      console.error('Google login error:', err);
+      if (err?.code === 'auth/popup-closed-by-user') return;
+      const msg = err?.response?.data?.error?.message ?? err?.message ?? 'Google login failed';
+      setError(msg);
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -201,6 +223,27 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
+
+          {/* Google Sign-In */}
+          <Divider sx={{ my: 2.5, fontSize: '0.75rem', color: 'text.disabled' }}>OR</Divider>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="large"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+            startIcon={googleLoading ? <CircularProgress size={18} /> : <GoogleIcon />}
+            sx={{
+              py: 1.3,
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              borderColor: '#dadce0',
+              color: 'text.primary',
+              '&:hover': { borderColor: '#bdc1c6', bgcolor: '#f8f9fa' },
+            }}
+          >
+            Sign in with Google
+          </Button>
 
           {/* Footer */}
           <Typography

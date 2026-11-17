@@ -8,8 +8,10 @@ import * as authController from './auth.controller.js';
 const router = Router();
 
 router.post('/login', loginLimiter, validate(loginSchema), authController.login);
+router.post('/google', loginLimiter, authController.googleLogin);
 router.post('/refresh', validate(refreshTokenSchema), authController.refresh);
 router.post('/logout', authenticate, authController.logout);
 router.post('/change-password', authenticate, validate(changePasswordSchema), authController.changePassword);
+router.post('/setup-profile', authenticate, authController.setupProfile);
 
 export default router;

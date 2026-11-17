@@ -9,6 +9,11 @@ export async function loginApi(username: string, password: string): Promise<Logi
   return data.data!;
 }
 
+export async function googleLoginApi(idToken: string): Promise<LoginResponse> {
+  const { data } = await apiClient.post<ApiResponse<LoginResponse>>('/auth/google', { idToken });
+  return data.data!;
+}
+
 export async function refreshApi(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
   const { data } = await apiClient.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
     '/auth/refresh',
@@ -23,4 +28,8 @@ export async function logoutApi(): Promise<void> {
 
 export async function changePasswordApi(currentPassword: string, newPassword: string): Promise<void> {
   await apiClient.post('/auth/change-password', { currentPassword, newPassword });
+}
+
+export async function setupProfileApi(fullName: string, password: string): Promise<void> {
+  await apiClient.post('/auth/setup-profile', { fullName, password });
 }
