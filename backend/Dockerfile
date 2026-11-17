@@ -10,6 +10,7 @@ RUN npm ci --workspace=shared --workspace=backend
 
 COPY shared/ shared/
 COPY backend/ backend/
+COPY database/ database/
 
 RUN npm run build --workspace=shared
 RUN npm run build --workspace=backend
@@ -28,6 +29,7 @@ COPY --from=builder /app/shared/dist shared/dist
 COPY shared/package.json shared/
 COPY --from=builder /app/backend/dist backend/dist
 COPY backend/package.json backend/
+COPY --from=builder /app/database database/
 
 ENV NODE_ENV=production
 EXPOSE 3000
