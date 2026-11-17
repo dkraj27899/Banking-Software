@@ -4,6 +4,7 @@ const hi = {
     common: {
       appName: 'भगवती क्रेडिट',
       appSubtitle: 'सहकारी संस्था लि.',
+      welcome: 'स्वागत है !',
       bankingSystem: 'बैंकिंग प्रबंधन प्रणाली',
       systemVersion: 'BCCS बैंकिंग सिस्टम v0.1',
       search: 'खोजें',

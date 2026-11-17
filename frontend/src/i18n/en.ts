@@ -4,6 +4,7 @@ const en = {
     common: {
       appName: 'Bhagwati Credit',
       appSubtitle: 'Co-operative Society Ltd.',
+      welcome: 'Welcome !',
       bankingSystem: 'Banking Management System',
       systemVersion: 'BCCS Banking System v0.1',
       search: 'Search',
