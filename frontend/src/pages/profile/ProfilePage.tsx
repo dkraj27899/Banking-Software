@@ -97,8 +97,9 @@ export default function ProfilePage() {
         </Box>
 
         {/* Avatar + Name */}
-        <Box sx={{ px: 3, mt: -5, pb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 2 }}>
+        <Box sx={{ px: 3, pb: 3 }}>
+          {/* Avatar overlapping banner */}
+          <Box sx={{ mt: -5, mb: 1.5 }}>
             <Avatar
               sx={{
                 width: 80, height: 80,
@@ -111,38 +112,39 @@ export default function ProfilePage() {
             >
               {initials}
             </Avatar>
-            <Box sx={{ flex: 1, minWidth: 0, pb: 0.5 }}>
-              <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: 'text.primary', lineHeight: 1.2 }}>
-                {user.fullName}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.75 }}>
+          </Box>
+          {/* Name + Role below the banner */}
+          <Box sx={{ mb: 2 }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: 'text.primary', lineHeight: 1.2 }}>
+              {user.fullName}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.75, flexWrap: 'wrap' }}>
+              <Chip
+                label={roleLabel}
+                size="small"
+                sx={{
+                  textTransform: 'capitalize',
+                  bgcolor: alpha(NAVY, 0.08),
+                  color: NAVY,
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  height: 24,
+                }}
+              />
+              {isGoogle && (
                 <Chip
-                  label={roleLabel}
+                  icon={<GoogleIcon sx={{ fontSize: '14px !important' }} />}
+                  label="Google"
                   size="small"
                   sx={{
-                    textTransform: 'capitalize',
-                    bgcolor: alpha(NAVY, 0.08),
-                    color: NAVY,
+                    bgcolor: alpha('#4285F4', 0.08),
+                    color: '#4285F4',
                     fontWeight: 600,
                     fontSize: '0.7rem',
                     height: 24,
                   }}
                 />
-                {isGoogle && (
-                  <Chip
-                    icon={<GoogleIcon sx={{ fontSize: '14px !important' }} />}
-                    label="Google"
-                    size="small"
-                    sx={{
-                      bgcolor: alpha('#4285F4', 0.08),
-                      color: '#4285F4',
-                      fontWeight: 600,
-                      fontSize: '0.7rem',
-                      height: 24,
-                    }}
-                  />
-                )}
-              </Box>
+              )}
             </Box>
           </Box>
 
