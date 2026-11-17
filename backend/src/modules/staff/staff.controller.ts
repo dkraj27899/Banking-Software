@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database.js';
-import { redis } from '../../config/redis.js';
+import { redis, scanKeys } from '../../config/redis.js';
 import { hashPassword } from '../../utils/password.js';
 import { logAudit } from '../../middleware/auditLog.js';
 import type { RoleCode } from '@bccs/shared';
@@ -254,7 +254,7 @@ export async function deactivateStaff(req: Request, res: Response, next: NextFun
     }
 
     // Revoke all sessions
-    const keys = await redis.keys(`rt:${id}:*`);
+    const keys = await scanKeys(`rt:${id}:*`);
     if (keys.length > 0) await redis.del(...keys);
 
     logAudit({
