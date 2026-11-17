@@ -15,3 +15,4 @@ coverage/
 frontend/vite.config.js
 frontend/vite.config.d.ts
 backend/server.txt
+firebase.js
