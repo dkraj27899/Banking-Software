@@ -1,7 +1,9 @@
-name: Build & Deploy
+name: CI/CD Pipeline
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 env:
@@ -10,7 +12,36 @@ env:
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/bccs-frontend
 
 jobs:
-  build-and-push:
+  # ── Stage 1: Lint, Type-check, Test ──
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
+
+      - name: Type-check backend
+        run: npx tsc --noEmit --project backend/tsconfig.json
+
+      - name: Type-check frontend
+        run: npx tsc --noEmit --project frontend/tsconfig.json
+
+      - name: Run tests
+        run: npm test
+
+  # ── Stage 2: Build & Push Docker Images ──
+  build:
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -59,9 +90,11 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
+  # ── Stage 3: Deploy to Production ──
   deploy:
-    needs: build-and-push
+    needs: build
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Deploy to server
@@ -71,7 +104,33 @@ jobs:
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
+
+            echo "── Logging in to GHCR ──"
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+            echo "── Pulling latest images ──"
+            docker pull ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            docker pull ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+            docker tag ${{ env.BACKEND_IMAGE }}:${{ github.sha }} bccs-backend:latest
+            docker tag ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} bccs-frontend:latest
+
+            echo "── Restarting services ──"
             cd /opt/bccs
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d backend frontend
+
+            echo "── Waiting for backend health ──"
+            for i in $(seq 1 30); do
+              if curl -sf http://127.0.0.1:3001/api/health > /dev/null 2>&1; then
+                echo "Backend healthy!"
+                break
+              fi
+              echo "Waiting... ($i/30)"
+              sleep 2
+            done
+
+            echo "── Cleaning up old images ──"
             docker image prune -f
+
+            echo "── Deploy complete ──"
