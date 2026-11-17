@@ -30,12 +30,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { labelKey: 'nav.dashboard', path: '/', icon: <DashboardIcon /> },
-  { labelKey: 'nav.members', path: '/members', icon: <PeopleIcon /> },
-  { labelKey: 'nav.accounts', path: '/accounts', icon: <AccountBalanceIcon /> },
-  { labelKey: 'nav.transactions', path: '/transactions', icon: <ReceiptLongIcon /> },
-  { labelKey: 'nav.loans', path: '/loans', icon: <CreditScoreIcon /> },
-  { labelKey: 'nav.passbook', path: '/passbook', icon: <MenuBookIcon /> },
-  { labelKey: 'nav.expenses', path: '/expenses', icon: <PaymentsIcon /> },
+  { labelKey: 'nav.members', path: '/members', icon: <PeopleIcon />, permission: PERMISSIONS.MEMBER_READ },
+  { labelKey: 'nav.accounts', path: '/accounts', icon: <AccountBalanceIcon />, permission: PERMISSIONS.ACCOUNT_READ },
+  { labelKey: 'nav.transactions', path: '/transactions', icon: <ReceiptLongIcon />, permission: PERMISSIONS.TRANSACTION_READ },
+  { labelKey: 'nav.loans', path: '/loans', icon: <CreditScoreIcon />, permission: PERMISSIONS.LOAN_READ },
+  { labelKey: 'nav.passbook', path: '/passbook', icon: <MenuBookIcon />, permission: PERMISSIONS.TRANSACTION_READ },
+  { labelKey: 'nav.expenses', path: '/expenses', icon: <PaymentsIcon />, permission: PERMISSIONS.EXPENSE_READ },
   { labelKey: 'nav.reports', path: '/reports', icon: <AssessmentIcon />, permission: PERMISSIONS.REPORT_READ },
   { labelKey: 'nav.staff', path: '/staff', icon: <BadgeIcon />, permission: PERMISSIONS.STAFF_MANAGE },
   { labelKey: 'nav.auditLogs', path: '/audit', icon: <HistoryIcon />, permission: PERMISSIONS.AUDIT_READ },

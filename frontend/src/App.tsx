@@ -75,79 +75,84 @@ export default function App() {
                   <Route index element={<DashboardPage />} />
 
                   {/* Members */}
-                  <Route path="members" element={<MemberListPage />} />
-                  <Route path="members/new" element={<CreateMemberPage />} />
-                  <Route path="members/:id" element={<MemberDetailPage />} />
+                  <Route path="members" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.MEMBER_READ}><MemberListPage /></ProtectedRoute>
+                  } />
+                  <Route path="members/new" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.MEMBER_CREATE}><CreateMemberPage /></ProtectedRoute>
+                  } />
+                  <Route path="members/:id" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.MEMBER_READ}><MemberDetailPage /></ProtectedRoute>
+                  } />
 
                   {/* Accounts */}
-                  <Route path="accounts" element={<AccountListPage />} />
-                  <Route path="accounts/new" element={<CreateAccountPage />} />
-                  <Route path="accounts/:id" element={<AccountDetailPage />} />
+                  <Route path="accounts" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.ACCOUNT_READ}><AccountListPage /></ProtectedRoute>
+                  } />
+                  <Route path="accounts/new" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.ACCOUNT_CREATE}><CreateAccountPage /></ProtectedRoute>
+                  } />
+                  <Route path="accounts/:id" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.ACCOUNT_READ}><AccountDetailPage /></ProtectedRoute>
+                  } />
 
                   {/* Transactions */}
-                  <Route path="transactions" element={<TransactionListPage />} />
-                  <Route path="transactions/new" element={<NewTransactionPage />} />
+                  <Route path="transactions" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.TRANSACTION_READ}><TransactionListPage /></ProtectedRoute>
+                  } />
+                  <Route path="transactions/new" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.TRANSACTION_CREATE}><NewTransactionPage /></ProtectedRoute>
+                  } />
 
                   {/* Passbook */}
-                  <Route path="passbook" element={<PassbookPage />} />
-                  <Route path="passbook/:accountId" element={<PassbookPage />} />
+                  <Route path="passbook" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.TRANSACTION_READ}><PassbookPage /></ProtectedRoute>
+                  } />
+                  <Route path="passbook/:accountId" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.TRANSACTION_READ}><PassbookPage /></ProtectedRoute>
+                  } />
 
                   {/* Loans */}
-                  <Route path="loans" element={<LoanListPage />} />
-                  <Route path="loans/apply" element={<LoanApplicationPage />} />
-                  <Route path="loans/:id" element={<LoanDetailPage />} />
+                  <Route path="loans" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.LOAN_READ}><LoanListPage /></ProtectedRoute>
+                  } />
+                  <Route path="loans/apply" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.LOAN_CREATE}><LoanApplicationPage /></ProtectedRoute>
+                  } />
+                  <Route path="loans/:id" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.LOAN_READ}><LoanDetailPage /></ProtectedRoute>
+                  } />
 
                   {/* Expenses */}
-                  <Route path="expenses" element={<ExpenseListPage />} />
-                  <Route path="expenses/new" element={<CreateExpensePage />} />
+                  <Route path="expenses" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.EXPENSE_READ}><ExpenseListPage /></ProtectedRoute>
+                  } />
+                  <Route path="expenses/new" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.EXPENSE_CREATE}><CreateExpensePage /></ProtectedRoute>
+                  } />
 
                   {/* Staff Management */}
-                  <Route
-                    path="staff"
-                    element={
-                      <ProtectedRoute requiredPermission={PERMISSIONS.STAFF_MANAGE}>
-                        <StaffListPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="staff/new"
-                    element={
-                      <ProtectedRoute requiredPermission={PERMISSIONS.STAFF_MANAGE}>
-                        <CreateStaffPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="staff" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.STAFF_MANAGE}><StaffListPage /></ProtectedRoute>
+                  } />
+                  <Route path="staff/new" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.STAFF_MANAGE}><CreateStaffPage /></ProtectedRoute>
+                  } />
 
                   {/* Reports */}
-                  <Route
-                    path="reports"
-                    element={
-                      <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_READ}>
-                        <ReportsPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="reports" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_READ}><ReportsPage /></ProtectedRoute>
+                  } />
 
                   {/* Audit Logs */}
-                  <Route
-                    path="audit"
-                    element={
-                      <ProtectedRoute requiredPermission={PERMISSIONS.AUDIT_READ}>
-                        <AuditLogPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="audit" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.AUDIT_READ}><AuditLogPage /></ProtectedRoute>
+                  } />
 
                   {/* Settings */}
-                  <Route
-                    path="settings"
-                    element={
-                      <ProtectedRoute requiredPermission={PERMISSIONS.CONFIG_MANAGE}>
-                        <SettingsPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="settings" element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.CONFIG_MANAGE}><SettingsPage /></ProtectedRoute>
+                  } />
 
                   {/* Profile */}
                   <Route path="profile" element={<ProfilePage />} />
