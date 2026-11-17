@@ -274,7 +274,7 @@ export async function authorizeTransaction(req: Request, res: Response, next: Ne
       if (txn.status !== 'pending') {
         throw Object.assign(new Error('Only pending transactions can be authorized'), { statusCode: 400, code: 'NOT_PENDING' });
       }
-      if (txn.entered_by === req.user!.id) {
+      if (txn.entered_by === req.user!.id && req.user!.role !== 'super_admin') {
         throw Object.assign(new Error('Cannot authorize own transaction (maker-checker)'), { statusCode: 403, code: 'SELF_AUTHORIZATION' });
       }
 
