@@ -20,8 +20,11 @@ import type { AccessTokenPayload, RefreshTokenPayload } from '../utils/jwt.js';
 const accessPayload: AccessTokenPayload = {
   userId: '123e4567-e89b-12d3-a456-426614174000',
   username: 'testuser',
+  fullName: 'Test User',
+  email: 'test@example.com',
   role: 'cashier',
   branchId: '223e4567-e89b-12d3-a456-426614174000',
+  branchName: 'Main Branch',
   permissions: ['transaction:create', 'transaction:read'],
 };
 

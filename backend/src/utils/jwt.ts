@@ -6,6 +6,7 @@ export interface AccessTokenPayload {
   userId: string;
   username: string;
   fullName: string;
+  email: string;
   role: RoleCode;
   branchId: string;
   branchName: string;

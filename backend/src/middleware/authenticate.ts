@@ -30,6 +30,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
       id: payload.userId,
       username: payload.username,
       fullName: payload.fullName,
+      email: payload.email,
       role: payload.role,
       permissions: payload.permissions,
       branchId: payload.branchId,
