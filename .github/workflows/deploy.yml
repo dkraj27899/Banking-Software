@@ -40,44 +40,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup SSH
+      - name: Setup SSH and Deploy
+        env:
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H 202.61.199.55 >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Deploy to server
-        run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@202.61.199.55 'bash -s' << 'EOF'
-          set -e
-
-          echo "── Pulling latest code ──"
-          cd /opt/bccs/repo
-          git pull origin main
-
-          echo "── Building backend ──"
-          cd /opt/bccs
-          docker compose -f docker-compose.prod.yml build backend
-
-          echo "── Building frontend ──"
-          docker compose -f docker-compose.prod.yml build frontend
-
-          echo "── Restarting services ──"
-          docker compose -f docker-compose.prod.yml up -d backend frontend
-
-          echo "── Waiting for backend health ──"
-          for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:3001/api/health > /dev/null 2>&1; then
-              echo "Backend healthy!"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
-          done
-
-          echo "── Cleaning up old images ──"
-          docker image prune -f
-
-          echo "── Deploy complete ──"
-          EOF
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@202.61.199.55 'cd /opt/bccs/repo && git pull origin main && cd /opt/bccs && docker compose -f docker-compose.prod.yml build backend && docker compose -f docker-compose.prod.yml build frontend && docker compose -f docker-compose.prod.yml up -d backend frontend && sleep 5 && curl -sf http://127.0.0.1:3001/api/health && docker image prune -f && echo "Deploy complete"'
