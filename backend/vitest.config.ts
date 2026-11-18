@@ -11,6 +11,7 @@ export default defineConfig({
       JWT_REFRESH_SECRET: 'test-refresh-secret-minimum-32-chars!!a',
       JWT_ACCESS_EXPIRES_IN: '15m',
       JWT_REFRESH_EXPIRES_IN: '7d',
+      SMS_ENABLED: 'false',
     },
   },
   resolve: {

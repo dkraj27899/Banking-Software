@@ -26,9 +26,8 @@ const envSchema = z.object({
   LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900_000),
   LOGIN_RATE_LIMIT_MAX_ATTEMPTS: z.coerce.number().int().default(5),
 
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_PHONE_NUMBER: z.string().optional(),
+  MSG91_AUTH_KEY: z.string().optional(),
+  MSG91_TEMPLATE_ID: z.string().optional(),
   SMS_ENABLED: z.enum(['true', 'false']).default('false'),
 
   FIREBASE_PROJECT_ID: z.string().optional(),

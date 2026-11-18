@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { query, withTransaction } from '../../config/database.js';
 import { logAudit } from '../../middleware/auditLog.js';
 import { notifyApprovers } from '../notifications/notifications.service.js';
+import { sendMemberRegistered } from '../../services/sms.service.js';
 
 interface MemberRow {
   id: string;
@@ -329,8 +330,8 @@ export async function approveMember(req: Request, res: Response, next: NextFunct
     const id = String(req.params['id']);
 
     const result = await withTransaction(async (client) => {
-      const memberResult = await client.query<{ status: string; created_by: string }>(
-        `SELECT status, created_by FROM members WHERE id = $1 FOR UPDATE`,
+      const memberResult = await client.query<{ status: string; created_by: string; full_name: string; mobile: string }>(
+        `SELECT status, created_by, full_name, mobile FROM members WHERE id = $1 FOR UPDATE`,
         [id],
       );
 
@@ -370,7 +371,7 @@ export async function approveMember(req: Request, res: Response, next: NextFunct
         [membershipNumber, req.user!.id, id],
       );
 
-      return membershipNumber;
+      return { membershipNumber, fullName: memberResult.rows[0]!.full_name, mobile: memberResult.rows[0]!.mobile };
     });
 
     logAudit({
@@ -379,12 +380,16 @@ export async function approveMember(req: Request, res: Response, next: NextFunct
       action: 'MEMBER_APPROVE',
       entityType: 'members',
       entityId: id,
-      details: { membershipNumber: result },
+      details: { membershipNumber: result.membershipNumber },
       ipAddress: String(req.ip ?? 'unknown'),
       branchId: req.user!.branchId,
     });
 
-    res.json({ success: true, data: { membershipNumber: result, message: 'Member approved' } });
+    if (result.mobile) {
+      sendMemberRegistered(result.mobile, result.fullName, result.membershipNumber);
+    }
+
+    res.json({ success: true, data: { membershipNumber: result.membershipNumber, message: 'Member approved' } });
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ success: false, error: { code: err.code, message: err.message } });
