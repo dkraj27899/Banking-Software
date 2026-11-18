@@ -1,14 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-
-// Set env vars before importing jwt module
-beforeAll(() => {
-  process.env['DATABASE_URL'] = 'postgresql://test:test@localhost:5432/test';
-  process.env['JWT_SECRET'] = 'test-secret-minimum-32-characters-long!!';
-  process.env['JWT_REFRESH_SECRET'] = 'test-refresh-secret-minimum-32-chars!!a';
-  process.env['JWT_ACCESS_EXPIRES_IN'] = '15m';
-  process.env['JWT_REFRESH_EXPIRES_IN'] = '7d';
-});
-
+import { describe, it, expect } from 'vitest';
 import {
   generateAccessToken,
   generateRefreshToken,
