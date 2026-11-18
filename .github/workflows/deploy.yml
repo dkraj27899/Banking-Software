@@ -1,13 +1,13 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
 
 jobs:
-  # ── Stage 1: Lint, Type-check, Test ──
+  # ── Runs on every PR and push to main ──
   quality:
     runs-on: ubuntu-latest
     steps:
@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         run: npm test --workspace=backend
 
-  # ── Stage 2: Deploy to Production ──
+  # ── Only deploys when a PR is merged to main ──
   deploy:
     needs: quality
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
